@@ -1,0 +1,1075 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"Vector",
+				"VectorRelativeAngle"
+			],
+			[
+				"Playing",
+				"PlayingSound"
+			],
+			[
+				"SAMPLES",
+				"SAMPLE_BYTES"
+			],
+			[
+				"SAME",
+				"SAMPLE_BYTES"
+			],
+			[
+				"AudioBuffer",
+				"AudioBufferSizeBytes"
+			],
+			[
+				"AUDIO",
+				"AUDIO_BUFFER_SIZE_SECONDS"
+			],
+			[
+				"C",
+				"CHANNEL_SAMPLE_BITS"
+			]
+		]
+	},
+	"buffers":
+	[
+		{
+			"file": "main.cc",
+			"settings":
+			{
+				"buffer_size": 1387,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "build.bat",
+			"settings":
+			{
+				"buffer_size": 67,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "/C/Users/Matt/AppData/Roaming/Sublime Text 3/Packages/User/SoftwareRenderer.sublime-build",
+			"settings":
+			{
+				"buffer_size": 44,
+				"line_ending": "Unix",
+				"name": "untitled.sublime-build"
+			}
+		}
+	],
+	"build_system": "",
+	"build_system_choices":
+	[
+	],
+	"build_varint": "",
+	"command_palette":
+	{
+		"height": 392.0,
+		"last_filter": "",
+		"selected_items":
+		[
+			[
+				"packa",
+				"Package Control: Disable Package"
+			],
+			[
+				"build",
+				"Build output always at top"
+			],
+			[
+				"",
+				"Build output always at top"
+			],
+			[
+				"package",
+				"Package Control: Install Package"
+			],
+			[
+				"todo",
+				"TodoReview: Project Files"
+			],
+			[
+				"packagere",
+				"PackageResourceViewer: Open Resource"
+			]
+		],
+		"width": 400.0
+	},
+	"console":
+	{
+		"height": 132.0,
+		"history":
+		[
+			"import urllib.request,os,hashlib; h = '2915d1851351e5ee549c20394736b442' + '8bc59f460fa1548d1514676163dafc88'; pf = 'Package Control.sublime-package'; ipp = sublime.installed_packages_path(); urllib.request.install_opener( urllib.request.build_opener( urllib.request.ProxyHandler()) ); by = urllib.request.urlopen( 'http://packagecontrol.io/' + pf.replace(' ', '%20')).read(); dh = hashlib.sha256(by).hexdigest(); print('Error validating download (got %s instead of %s), please try manual install' % (dh, h)) if dh != h else open(os.path.join( ipp, pf), 'wb' ).write(by)"
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"expanded_folders":
+	[
+		"/W/SoftwareRenderer"
+	],
+	"file_history":
+	[
+		"/C/Users/Matt/AppData/Roaming/Sublime Text 3/Packages/User/SpaceGame.sublime-build",
+		"/W/lib/gj/gj_lib.h",
+		"/C/Users/Matt/Desktop/WinVICE-2.4-x64/README",
+		"/W/SpaceGame/code/ai.cc",
+		"/W/lib/imgui/imconfig.h",
+		"/W/lib/imgui/imgui_demo.cpp",
+		"/W/SpaceGame/code/todo.txt",
+		"/C/Program Files (x86)/Steam/steamapps/common/Star Nomad 2/debug.log",
+		"/C/Program Files (x86)/Steam/steamapps/common/Star Nomad 2/credits.html",
+		"/W/SpaceGame/code/win32.cc",
+		"/C/Users/Matt/AppData/Local/Temp/fz3temp-1/cv.html",
+		"/C/Users/Matt/AppData/Local/Temp/Temp1_cafe_sdk-2_13_01-20150728-demo_patch_en.zip/cafe_sdk/system/src/demo/helloworld/helloworld.c",
+		"/W/SpaceGame/code/SpaceGame.sublime-workspace",
+		"/W/SpaceGame/code/renderer.cc",
+		"/C/Users/Matt/AppData/Local/Temp/Temp1_imgui-1.49.zip/imgui-1.49/imgui_draw.cpp",
+		"/W/SpaceGame/backup.bat",
+		"/W/SpaceGame/build/win32.i",
+		"/C/Users/Matt/AppData/Local/Temp/Temp1_WebglGame-master.zip/WebglGame-master/index.html",
+		"/C/Users/Matt/AppData/Roaming/Sublime Text 3/Packages/User/Preferences.sublime-settings",
+		"/C/Users/Matt/AppData/Roaming/Sublime Text 3/Packages/User/Package Control.sublime-settings",
+		"/C/Users/Matt/AppData/Roaming/Sublime Text 3/Packages/User/NewBuildSystem.sublime-build",
+		"/W/SpaceGame/SpaceGame.sublime-workspace",
+		"/W/SpaceGame/code/asset_shared.h",
+		"/W/SpaceGame/code/asset.cc",
+		"/W/SpaceGame/code/memory.cc",
+		"/W/SpaceGame/code/asset.h",
+		"/W/SpaceGame/code/render_opengl.h",
+		"/W/SpaceGame/code/opengl_extensions.h",
+		"/W/SpaceGame/code/platform.h",
+		"/W/SpaceGame/build/assets/test.mesh",
+		"/W/SpaceGame/code/render_opengl.cc",
+		"/W/SpaceGame/code/gamedef.h",
+		"/W/SpaceGame/code/TODO",
+		"/W/SpaceGame/code/game.h",
+		"/W/SpaceGame/code/entity.cc",
+		"/W/lib/stb_truetype.h",
+		"/W/SpaceGame/code/asset_packer/shader_processor.cc",
+		"/W/SpaceGame/code/asset_packer/asset_packer.cc",
+		"/W/SpaceGame/code/win32.h",
+		"/W/SpaceGame/code/game.cc",
+		"/W/SpaceGame/code/entity.h",
+		"/W/SpaceGame/code/debug.cc",
+		"/W/SpaceGame/code/math.cc",
+		"/W/SpaceGame/code/build.bat",
+		"/W/SpaceGame/code/entity_sim.cc",
+		"/W/SpaceGame/code/asset_packer/shared.cc",
+		"/W/SpaceGame/code/gui.cc",
+		"/W/SpaceGame/code/shaders/quad.shader",
+		"/W/SpaceGame/code/shaders/sprite_diffuse.shader",
+		"/W/SpaceGame/code/shaders/shield.shader",
+		"/W/SpaceGame/code/shaders/star.shader",
+		"/W/SpaceGame/shader_data.h",
+		"/W/SpaceGame/code/shaders/particle.shader",
+		"/W/SpaceGame/code/shaders/sprite.shader",
+		"/W/SpaceGame/code/shaders/model.shader",
+		"/W/SpaceGame/code/build_release.bat",
+		"/W/SpaceGame/code/debug.h",
+		"/W/SpaceGame/code/dsound.cc",
+		"/C/Users/Matt/Desktop/handmade.network-1462843162252.log",
+		"/W/WebsiteTools/code/shared.cc",
+		"/W/WebsiteTools/code/main.cc",
+		"/W/SpaceGame/code/dsound.h",
+		"/W/lib/stb_image.h",
+		"/W/SpaceGame/code/platform.cc",
+		"/W/SpaceGame/code/shaders/default.vert",
+		"/W/SpaceGame/code/shaders/quad.frag",
+		"/W/SpaceGame/code/shaders/model.vert",
+		"/W/SpaceGame/code/shaders/model.frag",
+		"/W/SpaceGame/build/assets/models/cube2.obj",
+		"/W/SpaceGame/build/assets/models/cube.obj",
+		"/W/SpaceGame/build/assets/models/station.obj",
+		"/W/SpaceGame/code/asset_packer/build.bat",
+		"/C/Program Files (x86)/OpenAL 1.1 SDK/include/al.h",
+		"/C/Program Files (x86)/OpenAL 1.1 SDK/include/alc.h",
+		"/C/Program Files (x86)/OpenAL 1.1 SDK/include/efx.h",
+		"/W/SpaceGame/build/assets/models/test.obj",
+		"/W/SpaceGame/build/assets/models/test.fbx",
+		"/W/SpaceGame/build/assets/models/test2.obj",
+		"/W/SpaceGame/build/assets/models/test.mtl",
+		"/W/WebsiteTools/code/main.c",
+		"/C/VulkanSDK/1.0.3.1/Demos/tri.c",
+		"/W/VulkanDemo/build/vulkan_loader.cc",
+		"/W/SpaceGame/code/renderer.h",
+		"/W/SpaceGame/code/shaders/sprite_diffuse.vert",
+		"/C/Users/Matt/AppData/Roaming/Sublime Text 3/Packages/Color Scheme - Default/Zenburnesque.tmTheme",
+		"/C/Users/Matt/AppData/Roaming/Sublime Text 3/Packages/Color Scheme - Default/Monokai Bright.tmTheme",
+		"/C/Users/Matt/AppData/Roaming/Sublime Text 3/Packages/Color Scheme - Default/Monokai.tmTheme",
+		"/W/SpaceGame/sublime.bat",
+		"/W/SpaceGame/code/items.h",
+		"/C/Users/Matt/VirtualBox VMs/Ubuntu/Ubuntu.vbox",
+		"/W/SiteGenerator/build/giantjelly/template.html",
+		"/W/SiteGenerator/build/giantjelly/index.html",
+		"/W/SiteGenerator/build/giantjelly/posts/ludumdare-and-jellymoon-dev.html",
+		"/C/Users/Matt/youtube_cmd/youtube-dl.bat",
+		"/W/SpaceGame/code/sound.h",
+		"/W/SpaceGame/code/sound.cc",
+		"/W/SpaceGame/game.sublime-build",
+		"/C/Users/Matt/Documents/game.sublime-build",
+		"/C/Users/Matt/AppData/Roaming/Sublime Text 3/Packages/Default/Preferences.sublime-settings"
+	],
+	"find":
+	{
+		"height": 24.0
+	},
+	"find_in_files":
+	{
+		"height": 90.0,
+		"where_history":
+		[
+			""
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+			"QueueEntityRemoval",
+			"entityRemovalQueue",
+			"GetEntityFromHash",
+			"GetEntityFromHash(&Game->World, 0)",
+			"GetPlayer",
+			"storageOffset",
+			"AddPlayer1",
+			"DrawLocationIndicator",
+			"entity_grid_cell",
+			"SpaceshipCount",
+			"CheckIfCloseStation",
+			"mission",
+			"AddCharacter",
+			"GetEntityFromReference",
+			"EntityReferenceLegit",
+			"GetPreviousCharacter",
+			"GetNextCharacter",
+			"GetPlayer",
+			"PlayerIDValid",
+			"AddCharacter",
+			"GetRandomEntityOfType",
+			"RandomShip",
+			"GetRandomStation",
+			"RandomStation",
+			"ref",
+			"sim_region",
+			"CheckIfCloseStation",
+			"AddCharacter",
+			";\n",
+			"SimRegion.EntityCount",
+			"cmd->size",
+			"cmd->",
+			"ClearRenderCommands",
+			"SetProjectionMatrix",
+			"UseGameWorldProjection",
+			"GetCameraRenderOffset",
+			"glTranslatef",
+			"WorldToScreen",
+			"worldtoscre",
+			"GetCameraRenderOffset",
+			"GetShaderVF",
+			"ClearRenderCommands",
+			"characterfire",
+			"UpdateAndRenderMenus",
+			"DebugProfileBegin",
+			"EntityAI",
+			"debugprofilebegin",
+			"entity_simulation",
+			"EntitySimulation",
+			"debugprofilebegin",
+			"innerTime",
+			"beginprofile",
+			"PerformanceFrequency",
+			"entire_frame",
+			"entireframe",
+			"randomfloat",
+			"AddBattleZone",
+			"addbattle",
+			"AddBattleZone",
+			"circle",
+			"AddBattleZone",
+			"init",
+			"target",
+			"CharacterFireWeapons",
+			"randomint",
+			"AddToEntityWeaponHold",
+			"characterdamage",
+			"0",
+			";\n",
+			"Weapon",
+			"weapon ",
+			"weapon",
+			"_gun_type",
+			"setshipclass",
+			"getplayer",
+			"platform_state",
+			"openglextens",
+			"gameInput->debug",
+			"PLAYER_MAX",
+			"entity_reference",
+			"SetShipClass",
+			"worldtoscree",
+			"\"viewportscale\"",
+			"playerrotation",
+			"playerdotthing",
+			"__LINE__",
+			"__FILE__",
+			"compactProfileView",
+			"platform_input",
+			"ProcessMessages",
+			"gamestart",
+			"glErrorCheck",
+			"gamestart",
+			"ImGui_ImplSdl_CreateDeviceObjects",
+			"stbrp_context",
+			"typedef struct stbrp_context stbrp_context;",
+			"stbrp_context",
+			"truetype.h",
+			"rect_pack.h",
+			"rect_pack",
+			"rect_",
+			"Value",
+			"g_MousePressed",
+			"g_MouseWheel",
+			"processmess",
+			"gameframe",
+			"processmess",
+			"getplayer",
+			"station",
+			"PushScreen",
+			"Push",
+			"PushBitmap",
+			");\n",
+			"CreatePerlinNoise",
+			"PerlinNoiseState",
+			"Running",
+			"RandomIntSlow",
+			"update",
+			"updateview",
+			"getTextureFrameBufferError",
+			");\n",
+			"worldProjectionMatrix",
+			"SetProjectionMatrix",
+			"pushbitmap",
+			"RENDER_COMMAND_MESH",
+			"GetShaderError",
+			"getshadererror",
+			"gamememory"
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"selected": 2,
+			"sheets":
+			[
+				{
+					"buffer": 0,
+					"file": "main.cc",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1387,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								1318,
+								1318
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/C++/C++.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 48.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 2,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "build.bat",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 67,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								61,
+								61
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Batch File/Batch File.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "/C/Users/Matt/AppData/Roaming/Sublime Text 3/Packages/User/SoftwareRenderer.sublime-build",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 44,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								41,
+								41
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JSON.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				}
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 24.0
+	},
+	"input":
+	{
+		"height": 32.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": false,
+	"output.exec":
+	{
+		"height": 222.0
+	},
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"pinned_build_system": "Packages/User/SpaceGame.sublime-build",
+	"project": "SoftwareRenderer.sublime-project",
+	"replace":
+	{
+		"height": 44.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+			[
+				"todo",
+				"code\\todo.txt"
+			],
+			[
+				"entity",
+				"code\\entity.cc"
+			],
+			[
+				"game",
+				"code\\game.cc"
+			],
+			[
+				"entty",
+				"code\\entity.cc"
+			],
+			[
+				"enitty",
+				"code\\entity.cc"
+			],
+			[
+				"enity",
+				"code\\entity_sim.cc"
+			],
+			[
+				"build",
+				"code\\build.bat"
+			],
+			[
+				"",
+				"code\\entity.cc"
+			],
+			[
+				"ai",
+				"code\\ai.cc"
+			],
+			[
+				"gj",
+				"W:\\lib\\gj\\gj_lib.h"
+			],
+			[
+				"gamedef",
+				"code\\gamedef.h"
+			],
+			[
+				"enit",
+				"code\\entity.cc"
+			],
+			[
+				"en",
+				"code\\entity.cc"
+			],
+			[
+				"e",
+				"code\\entity.h"
+			],
+			[
+				"debug",
+				"code\\debug.cc"
+			],
+			[
+				"tod",
+				"code\\todo.txt"
+			],
+			[
+				"gme",
+				"code\\game.cc"
+			],
+			[
+				"ent",
+				"code\\entity.h"
+			],
+			[
+				"gae",
+				"code\\game.h"
+			],
+			[
+				"enti",
+				"code\\entity.h"
+			],
+			[
+				"opengl",
+				"code\\render_opengl.cc"
+			],
+			[
+				"ebug",
+				"code\\debug.cc"
+			],
+			[
+				"buil",
+				"code\\build_release.bat"
+			],
+			[
+				"particle",
+				"shaders\\particle.glslf"
+			],
+			[
+				"debu",
+				"code\\debug.h"
+			],
+			[
+				"openg",
+				"code\\render_opengl.h"
+			],
+			[
+				"oengl",
+				"code\\render_opengl.cc"
+			],
+			[
+				"opeg",
+				"code\\render_opengl.cc"
+			],
+			[
+				"imgui",
+				"code\\imgui.cc"
+			],
+			[
+				"fluid",
+				"code\\fluid_animation.cc"
+			],
+			[
+				"pa",
+				"shaders\\particle.glslv"
+			],
+			[
+				"part",
+				"shaders\\background_particle.shader"
+			],
+			[
+				"asset",
+				"code\\asset.cc"
+			],
+			[
+				"opegl",
+				"code\\render_opengl.cc"
+			],
+			[
+				"eni",
+				"code\\entity_sim.cc"
+			],
+			[
+				"bst",
+				"code\\bst.cc"
+			],
+			[
+				"win32",
+				"code\\win32.cc"
+			],
+			[
+				"platform",
+				"code\\platform.h"
+			],
+			[
+				"de",
+				"code\\debug.cc"
+			],
+			[
+				"platfo",
+				"code\\platform.h"
+			],
+			[
+				"shared",
+				"code\\shared.cc"
+			],
+			[
+				"rng",
+				"code\\rng.cc"
+			],
+			[
+				"deubg",
+				"code\\debug.cc"
+			],
+			[
+				"quad",
+				"shaders\\quad.glslv"
+			],
+			[
+				"item",
+				"code\\items.h"
+			],
+			[
+				"debg",
+				"code\\debug.cc"
+			],
+			[
+				"ite",
+				"code\\items.h"
+			],
+			[
+				"latf",
+				"code\\platform.h"
+			],
+			[
+				"platfomr",
+				"code\\platform.h"
+			],
+			[
+				"platf",
+				"code\\platform.h"
+			],
+			[
+				"deug",
+				"code\\debug.cc"
+			],
+			[
+				"bui",
+				"code\\build.bat"
+			],
+			[
+				"ga",
+				"code\\game.cc"
+			],
+			[
+				"gui",
+				"code\\gui.cc"
+			],
+			[
+				"pla",
+				"code\\platform.h"
+			],
+			[
+				"math",
+				"code\\math.cc"
+			],
+			[
+				"screen",
+				"shaders\\background_screen_blit.glslf"
+			],
+			[
+				"neb",
+				"shaders\\nebula.glslf"
+			],
+			[
+				"post",
+				"shaders\\background_post_process.glslf"
+			],
+			[
+				"background",
+				"shaders\\background_particle.glslf"
+			],
+			[
+				"background_sc",
+				"shaders\\background_screen_blit.glslf"
+			],
+			[
+				"fl",
+				"code\\fluid_animation.cc"
+			],
+			[
+				"backgrond",
+				"shaders\\background_screen_blit.glslf"
+			],
+			[
+				"partice",
+				"shaders\\background_particle.glslf"
+			],
+			[
+				"ost",
+				"shaders\\background_post_process.glslf"
+			],
+			[
+				"asset_pack",
+				"code\\asset_packer\\asset_packer.cc"
+			],
+			[
+				"bac",
+				"shaders\\background_present.glslf"
+			],
+			[
+				"background_post",
+				"shaders\\background_post_process.glslf"
+			],
+			[
+				"backgro",
+				"shaders\\background_particle.glslf"
+			],
+			[
+				"ope",
+				"code\\render_opengl.cc"
+			],
+			[
+				"back",
+				"shaders\\background_present.glslv"
+			],
+			[
+				"sprite",
+				"shaders\\sprite_diffuse.glslf"
+			],
+			[
+				"background_par",
+				"shaders\\background_particle.glslf"
+			],
+			[
+				"flui",
+				"code\\fluid_animation.cc"
+			],
+			[
+				"shader",
+				"code\\asset_packer\\shader_processor.cc"
+			],
+			[
+				"render",
+				"code\\renderer.cc"
+			],
+			[
+				"asset_sh",
+				"code\\asset_shared.h"
+			],
+			[
+				"asset_s",
+				"asset_shared.h"
+			],
+			[
+				"star",
+				"shaders\\star.shader"
+			],
+			[
+				"shield",
+				"shaders\\shield.shader"
+			],
+			[
+				"model",
+				"shaders\\model.shader"
+			],
+			[
+				"shader_d",
+				"W:\\SpaceGame\\shader_data.h"
+			],
+			[
+				"asset_packer",
+				"asset_packer\\shared.cc"
+			],
+			[
+				"shader_pr",
+				"asset_packer\\shader_processor.cc"
+			],
+			[
+				"memory",
+				"memory.cc"
+			],
+			[
+				"f",
+				"fluid_animation.cc"
+			],
+			[
+				"aset",
+				"asset.cc"
+			],
+			[
+				"gam",
+				"game.cc"
+			],
+			[
+				"dsound",
+				"dsound.h"
+			],
+			[
+				"items",
+				"items.h"
+			],
+			[
+				"exte",
+				"opengl_extensions.h"
+			],
+			[
+				"gl",
+				"opengl_extensions.h"
+			],
+			[
+				"linux",
+				"linux.cc"
+			],
+			[
+				"sound",
+				"sound.cc"
+			],
+			[
+				"r_",
+				"r_directx.cc"
+			],
+			[
+				"win3",
+				"W:\\lib\\gj\\gj_win32.cc"
+			],
+			[
+				"rener",
+				"renderer.cc"
+			],
+			[
+				"r",
+				"r_directx.cc"
+			],
+			[
+				"gmaedef",
+				"gamedef.h"
+			],
+			[
+				"gma",
+				"game.cc"
+			],
+			[
+				"oeng",
+				"render_opengl.cc"
+			],
+			[
+				"open",
+				"render_opengl.cc"
+			],
+			[
+				"dosund",
+				"dsound.cc"
+			],
+			[
+				"wni32",
+				"win32.cc"
+			],
+			[
+				"dson",
+				"dsound.cc"
+			],
+			[
+				"dsoud",
+				"dsound.h"
+			],
+			[
+				"gmae",
+				"game.cc"
+			],
+			[
+				"dsoun",
+				"dsound.h"
+			],
+			[
+				"dsond",
+				"dsound.cc"
+			],
+			[
+				"gm",
+				"game.cc"
+			],
+			[
+				"plat",
+				"platform.h"
+			],
+			[
+				"entit",
+				"entity_sim.cc"
+			],
+			[
+				"wi32",
+				"win32.cc"
+			],
+			[
+				"platfrm",
+				"platform.h"
+			],
+			[
+				"doun",
+				"dsound.cc"
+			],
+			[
+				"dsund",
+				"dsound.h"
+			],
+			[
+				"platfor",
+				"platform.cc"
+			],
+			[
+				"asset.c",
+				"code\\asset.cc"
+			],
+			[
+				"sim",
+				"code\\entity_sim.cc"
+			],
+			[
+				"lat",
+				"code\\platform.h"
+			],
+			[
+				"latfor",
+				"code\\platform.cc"
+			],
+			[
+				"win",
+				"code\\win32.cc"
+			],
+			[
+				"model_pro",
+				"code\\asset_packer\\model_processor.h"
+			],
+			[
+				"assets",
+				"code\\asset_shared.h"
+			],
+			[
+				"obj",
+				"W:\\SpaceGame\\build\\assets\\models\\Confederacy\\confederacy_fighter.obj"
+			],
+			[
+				"ass",
+				"code\\asset_shared.h"
+			],
+			[
+				"oepngl",
+				"code\\render_opengl.cc"
+			],
+			[
+				"mem",
+				"code\\memory.cc"
+			]
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 500.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 380.0
+	},
+	"select_symbol":
+	{
+		"height": 392.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 392.0
+	},
+	"selected_group": 0,
+	"settings":
+	{
+	},
+	"show_minimap": true,
+	"show_open_files": false,
+	"show_tabs": false,
+	"side_bar_visible": true,
+	"side_bar_width": 259.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}
