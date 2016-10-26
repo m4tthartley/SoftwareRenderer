@@ -2,11 +2,20 @@
 // Software renderer
 
 #include <windows.h>
+#include <stdio.h>
 
-#define WINDOW_WIDTH 1280
-#define WINDOW_HEIGHT 720
+#define WINDOW_WIDTH 1920
+#define WINDOW_HEIGHT 1080
 
 bool globalRunning = true;
+LARGE_INTEGER globalPerformanceFrequency;
+
+double GetSeconds () {
+	LARGE_INTEGER time;
+	QueryPerformanceCounter(&time);
+	double seconds = (double)time.QuadPart / (double)globalPerformanceFrequency.QuadPart;
+	return seconds;
+}
 
 #include "software_renderer.cc"
 
@@ -27,6 +36,8 @@ LRESULT CALLBACK WindowCallback (HWND hwnd, UINT message, WPARAM wParam, LPARAM 
 }
 
 int CALLBACK WinMain (HINSTANCE hInstance, HINSTANCE prevInstance, LPSTR cmdLine, int cmdShow) {
+	QueryPerformanceFrequency(&globalPerformanceFrequency);
+
 	WNDCLASS windowClass = {};
 	windowClass.style = CS_OWNDC|CS_HREDRAW|CS_VREDRAW;
 	windowClass.lpfnWndProc = WindowCallback;
@@ -53,12 +64,14 @@ int CALLBACK WinMain (HINSTANCE hInstance, HINSTANCE prevInstance, LPSTR cmdLine
 		if (window) {
 			UpdateWindow(window);
 
+			Start(&state);
+
 			HDC hdc = GetDC(window);
 
 			BITMAPINFO bitmapInfo = {};
 			bitmapInfo.bmiHeader.biSize = sizeof(bitmapInfo.bmiHeader);
-			bitmapInfo.bmiHeader.biWidth = 640;
-			bitmapInfo.bmiHeader.biHeight = 360;
+			bitmapInfo.bmiHeader.biWidth = state.backBufferSize.x;
+			bitmapInfo.bmiHeader.biHeight = state.backBufferSize.y;
 			bitmapInfo.bmiHeader.biPlanes = 1;
 			bitmapInfo.bmiHeader.biBitCount = 32; // note: DWORD aligned
 			bitmapInfo.bmiHeader.biCompression = BI_RGB;
@@ -66,12 +79,35 @@ int CALLBACK WinMain (HINSTANCE hInstance, HINSTANCE prevInstance, LPSTR cmdLine
 			void *videoMemory;
 			HBITMAP hBitmap = CreateDIBSection (hdc, &bitmapInfo, DIB_RGB_COLORS, &videoMemory, 0, 0);
 
-			Start(&state);
-
 			while (globalRunning) {
+				state.input = {};
+
+#if 0
+				POINT mouse;
+				GetCursorPos(&mouse);
+				ScreenToClient(window, &mouse);
+				mouse.x /= (WINDOW_WIDTH/state.backBufferSize.x);
+				mouse.y /= (WINDOW_HEIGHT/state.backBufferSize.y);
+				char str[64];
+				sprintf(str, "mouse %i %i \n", mouse.x, mouse.y);
+				OutputDebugString(str);
+#endif
+
 				MSG Message;
 				while (PeekMessage(&Message, 0, 0, 0, PM_REMOVE)) {
 					switch (Message.message) {
+						case WM_SYSKEYDOWN:
+						case WM_KEYDOWN: {
+							switch (Message.wParam) {
+								case VK_LEFT: {
+									state.input.leftDown = true;
+								} break;
+								case VK_RIGHT: {
+									state.input.rightDown = true;
+								} break;
+							}
+						} break;
+
 						case WM_QUIT: {
 							globalRunning = false;
 						} break;
@@ -116,7 +152,7 @@ int CALLBACK WinMain (HINSTANCE hInstance, HINSTANCE prevInstance, LPSTR cmdLine
 					unsigned char b = state.video[i].b*255;
 					pixels[i] = (a << 24) | (r << 16) | (g << 8) | (b);
 				}
-				StretchDIBits(hdc, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 0, 0, 640, 360, videoMemory, &bitmapInfo, DIB_RGB_COLORS, SRCCOPY);
+				StretchDIBits(hdc, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 0, 0, state.backBufferSize.x, state.backBufferSize.y, videoMemory, &bitmapInfo, DIB_RGB_COLORS, SRCCOPY);
 				// BitBlt(hdc, 0, 0, 300, 300, hdc, 0, 0, SRCCOPY);
 
 				// EndPaint(window, &paint);
