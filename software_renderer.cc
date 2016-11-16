@@ -461,9 +461,9 @@ void DrawTriangle3D (State *state, float *verts, int vectorSize, int count, floa
 		PerspectiveProjection(state, &vs[i], 70);
 	}
 
-	char shit[64];
-	sprintf(shit, "v0x %f \n", vs[0].x);
-	OutputDebugString(shit);
+	// char shit[64];
+	// sprintf(shit, "v0x %f \n", vs[0].x);
+	// OutputDebugString(shit);
 
 	RasterizeTriangle(state, (float*)vs, vectorSize, count, colors);
 

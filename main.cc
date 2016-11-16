@@ -35,7 +35,90 @@ LRESULT CALLBACK WindowCallback (HWND hwnd, UINT message, WPARAM wParam, LPARAM 
 	return result;
 }
 
+struct WorkerThreadJob {
+	void (*proc) (void *udata);
+};
+struct WorkerThreadPool {
+	HANDLE semaphore;
+	WorkerThreadJob jobs[1024];
+	int jobCount;
+};
+
+// HANDLE semaphoreHandle;
+struct {
+	int id;
+	int value;
+} results[100];
+int resultCount = 0;
+int num = 0;
+DWORD WorkerThreadProc (LPVOID udata) {
+	WorkerThreadPool *workerThreadPool = (WorkerThreadPool*)udata;
+	DWORD threadId = GetThreadId(GetCurrentThread());
+	for (;;) {
+		WaitForSingleObject(workerThreadPool->semaphore, INFINITE);
+		if (workerThreadPool->jobCount > 0) {
+			void (*proc) (void *udata) = workerThreadPool->jobs[workerThreadPool->jobCount-1].proc;
+			workerThreadPool->jobCount--;
+			proc(NULL);
+			Sleep(10);
+		} else {
+			OutputDebugString("thread woke up when no jobs are available\n");
+		}
+	}
+	return 0;
+}
+
+void CreateWorkerThreadPool (WorkerThreadPool *workerThreadPool) {
+	*workerThreadPool = {};
+	workerThreadPool->semaphore = CreateSemaphore(0, 0, 1024, NULL);
+	for (int i = 0; i < 4; ++i) {
+		DWORD id;
+		CreateThread(0, 0, WorkerThreadProc, workerThreadPool, 0, &id);
+	}
+}
+
+void AddWorkerThreadJob (WorkerThreadPool *workerThreadPool, void (*proc) (void *udata), void *udata) {
+	workerThreadPool->jobs[workerThreadPool->jobCount].proc = proc;
+	++workerThreadPool->jobCount;
+	ReleaseSemaphore(workerThreadPool->semaphore, 1, NULL);
+}
+
+void AddResult (void *udata) {
+	DWORD threadId = GetThreadId(GetCurrentThread());
+	results[resultCount].id = threadId;
+	results[resultCount].value = num;
+	++resultCount;
+	++num;
+}
+
 int CALLBACK WinMain (HINSTANCE hInstance, HINSTANCE prevInstance, LPSTR cmdLine, int cmdShow) {
+	WorkerThreadPool workerThreads;
+	CreateWorkerThreadPool(&workerThreads);
+	/*semaphoreHandle = CreateSemaphore(0, 0, 1024, NULL);
+	for (int i = 0; i < 4; ++i) {
+		DWORD id;
+		CreateThread(0, 0, WorkerThreadProc, NULL, 0, &id);
+	}
+
+	ReleaseSemaphore(semaphoreHandle, 1, NULL);
+	ReleaseSemaphore(semaphoreHandle, 1, NULL);*/
+
+	AddWorkerThreadJob(&workerThreads, AddResult, NULL);
+	AddWorkerThreadJob(&workerThreads, AddResult, NULL);
+	AddWorkerThreadJob(&workerThreads, AddResult, NULL);
+	AddWorkerThreadJob(&workerThreads, AddResult, NULL);
+	AddWorkerThreadJob(&workerThreads, AddResult, NULL);
+	AddWorkerThreadJob(&workerThreads, AddResult, NULL);
+	AddWorkerThreadJob(&workerThreads, AddResult, NULL);
+	AddWorkerThreadJob(&workerThreads, AddResult, NULL);
+	Sleep(1000);
+
+	for (int i = 0; i < resultCount; ++i) {
+		char str[64];
+		sprintf(str, "value %i, thread %i\n", results[i].value, results[i].id);
+		OutputDebugString(str);
+	}
+
 	QueryPerformanceFrequency(&globalPerformanceFrequency);
 
 	WNDCLASS windowClass = {};
