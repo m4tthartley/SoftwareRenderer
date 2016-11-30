@@ -4,6 +4,7 @@
 
 #include <math.h>
 #include <malloc.h>
+#include <stdlib.h>
 
 typedef float real;
 typedef double real64;
@@ -30,7 +31,7 @@ union Vec3 {
 	};
 	struct {
 		Vec2 xy;
-		float z;
+		// float z;
 	};
 	struct {
 		float e[3];
@@ -178,7 +179,7 @@ void Start (State *state) {
 	state->backBufferSize.y = 270; // 1080 540 270
 	int videoMemorySize = sizeof(Color)*state->backBufferSize.x*state->backBufferSize.y;
 	int debugVideoSize = sizeof(DebugPixel)*state->backBufferSize.x*state->backBufferSize.y;
-	state->video = (Color*)VirtualAlloc(NULL, videoMemorySize+debugVideoSize, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
+	state->video = (Color*)malloc(videoMemorySize+debugVideoSize); //VirtualAlloc(NULL, videoMemorySize+debugVideoSize, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
 	state->debug.video = (DebugPixel*)(state->video + (state->backBufferSize.x*state->backBufferSize.y));
 
 	state->lastTime = GetSeconds();
@@ -319,7 +320,7 @@ void RasterizeTriangle (State *state, float *verts, int vectorSize, int count, f
 						if (c) {
 							color = ColorMul(c[0], c0) + ColorMul(c[1], c1) + ColorMul(c[2], c2);
 						} else {
-							color = {1, 1, 1, 0};
+							color = {1, 1, 1, 1};
 						}
 
 						state->video[VideoMemoryOffset(x, y)] += ColorMul(color, /*1.0f*/(float)fillSamples / 4.0f);
@@ -667,35 +668,35 @@ void Update (State *state) {
 		-0.5f, -0.5f, 0.5f,
 	};
 	float quadColors[] = {
-		1, 0, 0, 0,
-		1, 0, 0, 0,
-		1, 0, 0, 0,
-		1, 0, 0, 0,
+		1, 0, 0, 1,
+		1, 0, 0, 1,
+		1, 0, 0, 1,
+		1, 0, 0, 1,
 
-		0, 1, 0, 0,
-		0, 1, 0, 0,
-		0, 1, 0, 0,
-		0, 1, 0, 0,
+		0, 1, 0, 1,
+		0, 1, 0, 1,
+		0, 1, 0, 1,
+		0, 1, 0, 1,
 
-		0, 0, 1, 0,
-		0, 0, 1, 0,
-		0, 0, 1, 0,
-		0, 0, 1, 0,
+		0, 0, 1, 1,
+		0, 0, 1, 1,
+		0, 0, 1, 1,
+		0, 0, 1, 1,
 
-		1, 1, 0, 0,
-		1, 1, 0, 0,
-		1, 1, 0, 0,
-		1, 1, 0, 0,
+		1, 1, 0, 1,
+		1, 1, 0, 1,
+		1, 1, 0, 1,
+		1, 1, 0, 1,
 
-		0, 1, 1, 0,
-		0, 1, 1, 0,
-		0, 1, 1, 0,
-		0, 1, 1, 0,
+		0, 1, 1, 1,
+		0, 1, 1, 1,
+		0, 1, 1, 1,
+		0, 1, 1, 1,
 
-		1, 0, 1, 0,
-		1, 0, 1, 0,
-		1, 0, 1, 0,
-		1, 0, 1, 0,
+		1, 0, 1, 1,
+		1, 0, 1, 1,
+		1, 0, 1, 1,
+		1, 0, 1, 1,
 	};
 	DrawRectangle(state, quadVerts, 3, 24, quadColors, rotation, rotation.x, rotation.y, rotation.z);
 	
