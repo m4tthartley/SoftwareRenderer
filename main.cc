@@ -1,5 +1,5 @@
 
-#include "linux.cc"
+#include "platform.cc"
 #include "software_renderer.cc"
 
 void PresentBackBufferOGL (OSState *os, State *state) {
@@ -27,26 +27,41 @@ void PresentBackBufferOGL (OSState *os, State *state) {
 		glTexCoord2f(0.0f, 1.0f); glVertex2f(-1.0f, 1.0f);
 	}glEnd();
 
-	SwapBuffers(os);
+	SwapGLBuffers(os);
 }
 
-int main () {
+#ifdef _WIN32
+int CALLBACK WinMain (HINSTANCE hInstance, HINSTANCE prevInstance, LPSTR cmdLine, int cmdShow)
+#else
+int main ()
+#endif
+{
 	// StartGPUGraphics();
 	// StartCPUGraphics();
 
 	// StartHardwareGraphics();
 
-	OSState os = {};
-	StartHardwareGraphics(&os, 1280, 720);
-
 	State state = {};
-	Start(&state);	
+	Start(&state);
 
-	while (true) {
+	OSState os = {};
+	// StartHardwareGraphics(&os, 1280, 720);
+	StartSoftwareGraphics(&os, 1280, 720, state.backBufferSize.x, state.backBufferSize.y);
+
+	while (os.windowOpen) {
+		state.input = {};
+
 		PollEvents(&os);
 
 		Update(&state);
 
+#if 0
 		PresentBackBufferOGL(&os, &state);
+#else
+		state.video[0] = {1, 0, 0, 1};
+		state.video[1] = {0, 1, 0, 1};
+		state.video[2] = {0, 0, 1, 1};
+		PresentSoftwareBackBuffer(&os, state.video, PIXEL_FORMAT_FLOAT, 4);
+#endif
 	}
 }

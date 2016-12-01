@@ -141,7 +141,7 @@ void PollEvents (OSState *os) {
 	}
 }
 
-void SwapBuffers (OSState *os) {
+void SwapGLBuffers (OSState *os) {
 	glXSwapBuffers(os->_display, os->_window);
 }
 

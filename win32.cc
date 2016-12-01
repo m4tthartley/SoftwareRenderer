@@ -2,13 +2,29 @@
 // Software renderer
 
 #include <windows.h>
+#include <GL/gl.h>
+
 #include <stdio.h>
 
-#define WINDOW_WIDTH 1920
-#define WINDOW_HEIGHT 1080
+/*#define WINDOW_WIDTH 1920
+#define WINDOW_HEIGHT 1080*/
 
-bool globalRunning = true;
+// bool globalRunning = true;
 LARGE_INTEGER globalPerformanceFrequency;
+
+struct OSState {
+	HWND _window;
+	HDC hdc;
+	BITMAPINFO bitmapInfo;
+	void *videoMemory;
+	int windowWidth;
+	int windowHeight;
+	int backBufferWidth;
+	int backBufferHeight;
+	bool windowOpen;
+};
+
+OSState *_globalState;
 
 double GetSeconds () {
 	LARGE_INTEGER time;
@@ -17,16 +33,14 @@ double GetSeconds () {
 	return seconds;
 }
 
-#include "software_renderer.cc"
-
 LRESULT CALLBACK WindowCallback (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
 	LRESULT result = 0;
 	switch (message) {
 		case WM_CLOSE: {
-			globalRunning = false;
+			_globalState->windowOpen = false;
 		} break;
 		case WM_DESTROY: {
-			globalRunning = false;
+			_globalState->windowOpen = false;
 		} break;
 		default: {
 			result = DefWindowProc(hwnd, message, wParam, lParam);
@@ -91,7 +105,40 @@ void AddResult (void *udata) {
 	++num;
 }
 
-int CALLBACK WinMain (HINSTANCE hInstance, HINSTANCE prevInstance, LPSTR cmdLine, int cmdShow) {
+void PollEvents (OSState *os) {
+	MSG Message;
+	while (PeekMessage(&Message, 0, 0, 0, PM_REMOVE)) {
+		switch (Message.message) {
+			case WM_SYSKEYDOWN:
+			case WM_KEYDOWN: {
+				switch (Message.wParam) {
+					case VK_LEFT: {
+						// state.input.leftDown = true;
+					} break;
+					case VK_RIGHT: {
+						// state.input.rightDown = true;
+					} break;
+				}
+			} break;
+
+			case WM_QUIT: {
+				_globalState->windowOpen = false;
+			} break;
+			default:
+			{
+				TranslateMessage(&Message);
+				DispatchMessageA(&Message);
+			}
+			break;
+		}
+	}
+}
+
+void SwapGLBuffers (OSState *os) {
+	SwapBuffers(os->hdc);
+}
+
+void StartSoftwareGraphics (OSState *os, int windowWidth, int windowHeight, int backBufferWidth, int backBufferHeight) {
 	WorkerThreadPool workerThreads;
 	CreateWorkerThreadPool(&workerThreads);
 	/*semaphoreHandle = CreateSemaphore(0, 0, 1024, NULL);
@@ -119,89 +166,71 @@ int CALLBACK WinMain (HINSTANCE hInstance, HINSTANCE prevInstance, LPSTR cmdLine
 		OutputDebugString(str);
 	}
 
+	_globalState = os;
+
 	QueryPerformanceFrequency(&globalPerformanceFrequency);
 
 	WNDCLASS windowClass = {};
 	windowClass.style = CS_OWNDC|CS_HREDRAW|CS_VREDRAW;
 	windowClass.lpfnWndProc = WindowCallback;
+	// @note: Apparently getting the hInstance this way can cause issues if used in a dll
+	HMODULE hInstance = GetModuleHandle(NULL);
 	windowClass.hInstance = hInstance;
 	windowClass.lpszClassName = "Win32 window class";
 	windowClass.hCursor = LoadCursor(0, IDC_ARROW);
 
+	os->windowWidth = windowWidth;
+	os->windowHeight = windowHeight;
 	RECT windowRect;
 	windowRect.left = 0;
-	windowRect.right = WINDOW_WIDTH;
+	windowRect.right = windowWidth;
 	windowRect.top = 0;
-	windowRect.bottom = WINDOW_HEIGHT;
+	windowRect.bottom = windowHeight;
 	AdjustWindowRectEx(&windowRect, WS_OVERLAPPEDWINDOW|WS_VISIBLE, FALSE, 0);
 
-	State state = {};
-
 	if (RegisterClassA(&windowClass)) {
-		HWND window = CreateWindowExA(0, windowClass.lpszClassName, "Software renderer", WS_OVERLAPPEDWINDOW|WS_VISIBLE,
+		os->_window = CreateWindowExA(0, windowClass.lpszClassName, "Software renderer", WS_OVERLAPPEDWINDOW|WS_VISIBLE,
 			CW_USEDEFAULT, CW_USEDEFAULT,
 			windowRect.right-windowRect.left,
 			windowRect.bottom-windowRect.top,
 			0, 0, hInstance, 0);
 
-		if (window) {
-			UpdateWindow(window);
+		if (os->_window) {
+			os->windowOpen = true;
+			UpdateWindow(os->_window);
 
-			Start(&state);
+			os->hdc = GetDC(os->_window);
 
-			HDC hdc = GetDC(window);
+			os->bitmapInfo = {};
+			os->bitmapInfo.bmiHeader.biSize = sizeof(os->bitmapInfo.bmiHeader);
+			os->backBufferWidth = backBufferWidth;
+			os->backBufferHeight = backBufferHeight;
+			os->bitmapInfo.bmiHeader.biWidth = os->backBufferWidth;
+			os->bitmapInfo.bmiHeader.biHeight = os->backBufferHeight;
+			os->bitmapInfo.bmiHeader.biPlanes = 1;
+			os->bitmapInfo.bmiHeader.biBitCount = 32; // note: DWORD aligned
+			os->bitmapInfo.bmiHeader.biCompression = BI_RGB;
 
-			BITMAPINFO bitmapInfo = {};
-			bitmapInfo.bmiHeader.biSize = sizeof(bitmapInfo.bmiHeader);
-			bitmapInfo.bmiHeader.biWidth = state.backBufferSize.x;
-			bitmapInfo.bmiHeader.biHeight = state.backBufferSize.y;
-			bitmapInfo.bmiHeader.biPlanes = 1;
-			bitmapInfo.bmiHeader.biBitCount = 32; // note: DWORD aligned
-			bitmapInfo.bmiHeader.biCompression = BI_RGB;
+			HBITMAP hBitmap = CreateDIBSection (os->hdc, &os->bitmapInfo, DIB_RGB_COLORS, &os->videoMemory, 0, 0);
 
-			void *videoMemory;
-			HBITMAP hBitmap = CreateDIBSection (hdc, &bitmapInfo, DIB_RGB_COLORS, &videoMemory, 0, 0);
+#if 0
+			POINT mouse;
+			GetCursorPos(&mouse);
+			ScreenToClient(window, &mouse);
+			mouse.x /= (WINDOW_WIDTH/state.backBufferSize.x);
+			mouse.y /= (WINDOW_HEIGHT/state.backBufferSize.y);
+			char str[64];
+			sprintf(str, "mouse %i %i \n", mouse.x, mouse.y);
+			OutputDebugString(str);
+#endif
 
+#if 0
 			while (globalRunning) {
 				state.input = {};
 
-#if 0
-				POINT mouse;
-				GetCursorPos(&mouse);
-				ScreenToClient(window, &mouse);
-				mouse.x /= (WINDOW_WIDTH/state.backBufferSize.x);
-				mouse.y /= (WINDOW_HEIGHT/state.backBufferSize.y);
-				char str[64];
-				sprintf(str, "mouse %i %i \n", mouse.x, mouse.y);
-				OutputDebugString(str);
-#endif
 
-				MSG Message;
-				while (PeekMessage(&Message, 0, 0, 0, PM_REMOVE)) {
-					switch (Message.message) {
-						case WM_SYSKEYDOWN:
-						case WM_KEYDOWN: {
-							switch (Message.wParam) {
-								case VK_LEFT: {
-									state.input.leftDown = true;
-								} break;
-								case VK_RIGHT: {
-									state.input.rightDown = true;
-								} break;
-							}
-						} break;
 
-						case WM_QUIT: {
-							globalRunning = false;
-						} break;
-						default:
-						{
-							TranslateMessage(&Message);
-							DispatchMessageA(&Message);
-						}
-						break;
-					}
-				}
+				
 
 				Update(&state);
 
@@ -241,7 +270,38 @@ int CALLBACK WinMain (HINSTANCE hInstance, HINSTANCE prevInstance, LPSTR cmdLine
 				// EndPaint(window, &paint);
 
 			}
+#endif
 
 		}
 	}
 }
+
+/*
+	Only supporting 32 bit floats or 8 bit ints(signed or unsigned)
+	Should you be able to have different rgba order?
+*/
+enum SoftwarePixelFormat {
+	PIXEL_FORMAT_FLOAT,
+	PIXEL_FORMAT_INT8,
+	PIXEL_FORMAT_UINT8,
+};
+
+void PresentSoftwareBackBuffer (OSState *os, void *data, SoftwarePixelFormat format, int numComponents) {
+	float *video = (float*)data;
+	unsigned int *pixels = (unsigned int*)os->videoMemory;
+	for (int i = 0; i < os->backBufferWidth*os->backBufferHeight; ++i) {
+		unsigned char a = video[(i*numComponents)+3]*255;
+		unsigned char r = video[(i*numComponents)+0]*255;
+		unsigned char g = video[(i*numComponents)+1]*255;
+		unsigned char b = video[(i*numComponents)+2]*255;
+		pixels[i] = (a << 24) | (r << 16) | (g << 8) | (b);
+		// pixels[i] = (b << 24) | (g << 16) | (r << 8) | (a);
+		// pixels[i] = 0xFF00FF00;
+		//               aarrggbb
+	}
+	StretchDIBits(os->hdc, 0, 0, os->windowWidth, os->windowHeight, 0, 0, os->backBufferWidth, os->backBufferHeight, os->videoMemory, &os->bitmapInfo, DIB_RGB_COLORS, SRCCOPY);
+}
+
+/*int CALLBACK WinMain (HINSTANCE hInstance, HINSTANCE prevInstance, LPSTR cmdLine, int cmdShow) {
+	
+}*/
