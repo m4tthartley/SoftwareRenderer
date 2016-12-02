@@ -10,7 +10,7 @@
 #define WINDOW_HEIGHT 1080*/
 
 // bool globalRunning = true;
-LARGE_INTEGER globalPerformanceFrequency;
+LARGE_INTEGER globalPerformanceFrequency = {0};
 
 struct OSState {
 	HWND _window;
@@ -26,7 +26,12 @@ struct OSState {
 
 OSState *_globalState;
 
+int main (int argc, char**argv);
+
 double GetSeconds () {
+	if (!globalPerformanceFrequency.QuadPart) {
+		QueryPerformanceFrequency(&globalPerformanceFrequency);
+	}
 	LARGE_INTEGER time;
 	QueryPerformanceCounter(&time);
 	double seconds = (double)time.QuadPart / (double)globalPerformanceFrequency.QuadPart;
@@ -168,7 +173,7 @@ void StartSoftwareGraphics (OSState *os, int windowWidth, int windowHeight, int 
 
 	_globalState = os;
 
-	QueryPerformanceFrequency(&globalPerformanceFrequency);
+	// QueryPerformanceFrequency(&globalPerformanceFrequency);
 
 	WNDCLASS windowClass = {};
 	windowClass.style = CS_OWNDC|CS_HREDRAW|CS_VREDRAW;
@@ -305,3 +310,9 @@ void PresentSoftwareBackBuffer (OSState *os, void *data, SoftwarePixelFormat for
 /*int CALLBACK WinMain (HINSTANCE hInstance, HINSTANCE prevInstance, LPSTR cmdLine, int cmdShow) {
 	
 }*/
+
+int CALLBACK WinMain (HINSTANCE hInstance, HINSTANCE prevInstance, LPSTR cmdLine, int cmdShow) {
+	OutputDebugString("YEAH\n");
+	// @note: Hopefully these arg variable are always available
+	main(__argc, __argv);
+}

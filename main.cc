@@ -30,11 +30,11 @@ void PresentBackBufferOGL (OSState *os, State *state) {
 	SwapGLBuffers(os);
 }
 
-#ifdef _WIN32
-int CALLBACK WinMain (HINSTANCE hInstance, HINSTANCE prevInstance, LPSTR cmdLine, int cmdShow)
-#else
-int main ()
-#endif
+//#ifdef _WIN32
+//int CALLBACK WinMain (HINSTANCE hInstance, HINSTANCE prevInstance, LPSTR cmdLine, int cmdShow)
+//#else
+int main (int argc, char**argv)
+//#endif
 {
 	// StartGPUGraphics();
 	// StartCPUGraphics();
