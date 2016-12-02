@@ -1,6 +1,6 @@
 
-#include "platform.cc"
-#include "software_renderer.cc"
+#include "platform.c"
+#include "software_renderer.c"
 
 void PresentBackBufferOGL (OSState *os, State *state) {
 	static GLuint backBuffer = 0;
@@ -41,15 +41,16 @@ int main (int argc, char**argv)
 
 	// StartHardwareGraphics();
 
-	State state = {};
+	State state = {0};
 	Start(&state);
 
-	OSState os = {};
+	OSState os = {0};
 	StartHardwareGraphics(&os, 1280, 720);
 	// StartSoftwareGraphics(&os, 1280, 720, state.backBufferSize.x, state.backBufferSize.y);
 
 	while (os.windowOpen) {
-		state.input = {};
+		// state.input = {};
+		ZeroStruct(state.input);
 
 		PollEvents(&os);
 

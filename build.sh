@@ -1,2 +1,2 @@
 
-clang -g -std=c++11 main.cc -o build/SoftwareRenderer -lX11 -lGL -lm
+clang -g -pedantic-errors main.c -o build/SoftwareRenderer -lX11 -lGL -lm

@@ -11,19 +11,19 @@ typedef double real64;
 
 #define Assert(expression) if (!(expression)) { *((int*)0) = 0; }
 
-struct Color {
+typedef struct {
 	float r;
 	float g;
 	float b;
 	float a;
-};
+} Color;
 
-struct Vec2 {
+typedef struct {
 	float x;
 	float y;
-};
+} Vec2;
 
-union Vec3 {
+typedef union {
 	struct {
 		float x;
 		float y;
@@ -36,28 +36,28 @@ union Vec3 {
 	struct {
 		float e[3];
 	};
-};
+} Vec3;
 
-struct EulerAngle {
+typedef struct {
 	float x;
 	float y;
 	float z;
-};
+} EulerAngle;
 
-struct IVec2 {
+typedef struct {
 	int x;
 	int y;
-};
+} IVec2;
 
-struct DebugPixel {
+typedef struct {
 	int msaa;
-};
-struct DebugData {
+} DebugPixel;
+typedef struct {
 	DebugPixel *video;
 	bool enabled;
-};
+} DebugData;
 
-struct State {
+typedef struct {
 	Color *video;
 	struct {
 		int x;
@@ -71,7 +71,7 @@ struct State {
 		bool rightDown;
 		bool leftDown;
 	} input;
-};
+} State;
 
 float RandomFloat () {
 	int r = rand() % 1000;
@@ -145,7 +145,7 @@ Color ColorMul (Color c, float mul) {
 	return result;
 }
 
-Color operator+ (Color c0, Color c1) {
+Color ColorAdd (Color c0, Color c1) {
 	Color result;
 	result.r = c0.r + c1.r;
 	result.g = c0.g + c1.g;
@@ -153,13 +153,27 @@ Color operator+ (Color c0, Color c1) {
 	result.a = c0.a + c1.a;
 	return result;
 }
+void ColorAddP (Color *c0, Color c1) {
+	c0->r += c1.r;
+	c0->g += c1.g;
+	c0->b += c1.b;
+	c0->a += c1.a;
+}
+/*Color operator+ (Color c0, Color c1) {
+	Color result;
+	result.r = c0.r + c1.r;
+	result.g = c0.g + c1.g;
+	result.b = c0.b + c1.b;
+	result.a = c0.a + c1.a;
+	return result;
+}*/
 
-void operator+= (Color &c0, Color c1) {
+/*void operator+= (Color &c0, Color c1) {
 	c0.r += c1.r;
 	c0.g += c1.g;
 	c0.b += c1.b;
 	c0.a += c1.a;
-}
+}*/
 
 float FloatFract (float f) {
 	int i = f;
@@ -318,12 +332,16 @@ void RasterizeTriangle (State *state, float *verts, int vectorSize, int count, f
 						float c2 = TriangleArea(p, v0.xy, v1.xy) / triArea;
 						Color color;
 						if (c) {
-							color = ColorMul(c[0], c0) + ColorMul(c[1], c1) + ColorMul(c[2], c2);
+							color = ColorAdd(ColorAdd(ColorMul(c[0], c0), ColorMul(c[1], c1)), ColorMul(c[2], c2));
 						} else {
-							color = {1, 1, 1, 1};
+							// color = {1, 1, 1, 1};
+							color.r = 1;
+							color.g = 1;
+							color.b = 1;
+							color.a = 1;
 						}
 
-						state->video[VideoMemoryOffset(x, y)] += ColorMul(color, /*1.0f*/(float)fillSamples / 4.0f);
+						ColorAddP(&state->video[VideoMemoryOffset(x, y)], ColorMul(color, /*1.0f*/(float)fillSamples / 4.0f));
 
 						if (state->video[VideoMemoryOffset(x, y)].r > 1.0f) state->video[VideoMemoryOffset(x, y)].r = 1.0f;
 						if (state->video[VideoMemoryOffset(x, y)].g > 1.0f) state->video[VideoMemoryOffset(x, y)].g = 1.0f;
@@ -341,13 +359,14 @@ void RasterizeTriangle (State *state, float *verts, int vectorSize, int count, f
 	}
 }
 
-void DrawTriangle2D (State *state, float *verts, int vectorSize, int count, float *colors, float rotation = 0.0f) {
+void DrawTriangle2D (State *state, float *verts, int vectorSize, int count, float *colors, float rotation) {
 	Color *c = (Color*)colors;
 
 	// todo: Don't malloc please
 	Vec3 *vs = (Vec3*)malloc(sizeof(Vec3)*count);
 	for (int i = 0; i < count; ++i) {
-		vs[i] = {};
+		// vs[i] = {};
+		ZeroStruct(vs[i]);
 		for (int j = 0; j < vectorSize && j < 3; ++j) {
 			vs[i].e[j] = verts[i*vectorSize + j];
 		}
@@ -435,13 +454,14 @@ void EulerMatrixRotation (Vec3 *vec, float xRads, float yRads, float zRads) {
 	vec->z = xyz[8]*v.x + xyz[9]*v.y + xyz[10]*v.z + xyz[11]*w;
 }
 
-void DrawTriangle3D (State *state, float *verts, int vectorSize, int count, float *colors, EulerAngle rotation = {}, bool drawBackFaces = false) {
+void DrawTriangle3D (State *state, float *verts, int vectorSize, int count, float *colors, EulerAngle rotation, bool drawBackFaces) {
 	Color *c = (Color*)colors;
 
 	// todo: Don't malloc please
 	Vec3 *vs = (Vec3*)malloc(sizeof(Vec3)*count);
 	for (int i = 0; i < count; ++i) {
-		vs[i] = {};
+		// vs[i] = {};
+		ZeroStruct(vs[i]);
 		for (int j = 0; j < vectorSize && j < 3; ++j) {
 			vs[i].e[j] = verts[i*vectorSize + j];
 		}
@@ -539,7 +559,7 @@ void DrawRectangle (State *state, float *verts, int vectorSize, int count, float
 		temp += 6*4;
 	}
 
-	DrawTriangle3D(state, v, vectorSize, triVertCount, c, rotation);
+	DrawTriangle3D(state, v, vectorSize, triVertCount, c, rotation, false);
 
 	free(v);
 	free(c);
@@ -550,7 +570,7 @@ void DrawPoint (State *state, float x, float y, Color color) {
 	OrthoProjection(state, &vec);
 	Vec2 screenPos = GetPixelCoords(state, vec.x, vec.y);
 
-	Color blank = {};
+	Color blank = {0};
 	Color c0 = ColorLerp(blank, color, (1.0f-FloatFract(screenPos.x)) * (1.0f-FloatFract(screenPos.y)));
 	Color c1 = ColorLerp(blank, color, (FloatFract(screenPos.x)) * (1.0f-FloatFract(screenPos.y)));
 	Color c2 = ColorLerp(blank, color, (FloatFract(screenPos.x)) * (FloatFract(screenPos.y)));
@@ -576,10 +596,12 @@ void Update (State *state) {
 	state->dt = time - state->lastTime;
 	state->lastTime = time;
 	double dt = state->dt;
+	printf("dt %f \n", dt*1000);
 
-	ClearBackBuffer(state, {0, 0, 0, 0});
+	Color clearColor = {0};
+	ClearBackBuffer(state, clearColor);
 
-	static EulerAngle rotation = {};
+	static EulerAngle rotation = {0};
 	rotation.x += 0.4f * dt;
 	rotation.y += 0.8f * dt;
 	// rotation.z += 0.4f * dt;

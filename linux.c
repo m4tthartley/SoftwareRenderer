@@ -8,14 +8,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-struct OSState {
+typedef struct {
 	Display *_display;
 	Window _window;
 	bool windowOpen;
-};
+} OSState;
 
 double GetSeconds () {
-	timespec time;
+	struct timespec time;
 	clock_gettime(CLOCK_REALTIME, &time);
 	// printf("sec %li nsec %li \n", time.tv_sec, time.tv_nsec);
 	double secs = time.tv_sec + ((double)time.tv_nsec / 1000000000.0);
