@@ -11,6 +11,7 @@
 struct OSState {
 	Display *_display;
 	Window _window;
+	bool windowOpen;
 };
 
 double GetSeconds () {
@@ -137,6 +138,7 @@ void PollEvents (OSState *os) {
 		}
 		if (event.type == DestroyNotify) {
 			printf("Destroy window\n");
+			os->windowOpen = false;
 		}
 	}
 }
@@ -177,6 +179,7 @@ void StartHardwareGraphics (OSState *os, int windowWidth, int windowHeight) {
 
 			os->_display = xDisplay;
 			os->_window = xWindow;
+			os->windowOpen = true;
 
 			// while (true) {
 				

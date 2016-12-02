@@ -45,8 +45,8 @@ int main (int argc, char**argv)
 	Start(&state);
 
 	OSState os = {};
-	// StartHardwareGraphics(&os, 1280, 720);
-	StartSoftwareGraphics(&os, 1280, 720, state.backBufferSize.x, state.backBufferSize.y);
+	StartHardwareGraphics(&os, 1280, 720);
+	// StartSoftwareGraphics(&os, 1280, 720, state.backBufferSize.x, state.backBufferSize.y);
 
 	while (os.windowOpen) {
 		state.input = {};
@@ -55,7 +55,7 @@ int main (int argc, char**argv)
 
 		Update(&state);
 
-#if 0
+#if 1
 		PresentBackBufferOGL(&os, &state);
 #else
 		state.video[0] = {1, 0, 0, 1};
