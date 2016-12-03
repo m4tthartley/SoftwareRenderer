@@ -12,7 +12,7 @@
 // bool globalRunning = true;
 LARGE_INTEGER globalPerformanceFrequency = {0};
 
-struct OSState {
+typedef struct {
 	HWND _window;
 	HDC hdc;
 	BITMAPINFO bitmapInfo;
@@ -22,7 +22,7 @@ struct OSState {
 	int backBufferWidth;
 	int backBufferHeight;
 	bool windowOpen;
-};
+} OSState;
 
 OSState *_globalState;
 
@@ -54,14 +54,14 @@ LRESULT CALLBACK WindowCallback (HWND hwnd, UINT message, WPARAM wParam, LPARAM 
 	return result;
 }
 
-struct WorkerThreadJob {
+typedef struct {
 	void (*proc) (void *udata);
-};
-struct WorkerThreadPool {
+} WorkerThreadJob;
+typedef struct {
 	HANDLE semaphore;
 	WorkerThreadJob jobs[1024];
 	int jobCount;
-};
+} WorkerThreadPool;
 
 // HANDLE semaphoreHandle;
 struct {
@@ -88,7 +88,7 @@ DWORD WorkerThreadProc (LPVOID udata) {
 }
 
 void CreateWorkerThreadPool (WorkerThreadPool *workerThreadPool) {
-	*workerThreadPool = {};
+	ZeroStruct(*workerThreadPool);
 	workerThreadPool->semaphore = CreateSemaphore(0, 0, 1024, NULL);
 	for (int i = 0; i < 4; ++i) {
 		DWORD id;
@@ -175,7 +175,7 @@ void StartSoftwareGraphics (OSState *os, int windowWidth, int windowHeight, int 
 
 	// QueryPerformanceFrequency(&globalPerformanceFrequency);
 
-	WNDCLASS windowClass = {};
+	WNDCLASS windowClass = {0};
 	windowClass.style = CS_OWNDC|CS_HREDRAW|CS_VREDRAW;
 	windowClass.lpfnWndProc = WindowCallback;
 	// @note: Apparently getting the hInstance this way can cause issues if used in a dll
@@ -206,7 +206,7 @@ void StartSoftwareGraphics (OSState *os, int windowWidth, int windowHeight, int 
 
 			os->hdc = GetDC(os->_window);
 
-			os->bitmapInfo = {};
+			ZeroStruct(os->bitmapInfo);
 			os->bitmapInfo.bmiHeader.biSize = sizeof(os->bitmapInfo.bmiHeader);
 			os->backBufferWidth = backBufferWidth;
 			os->backBufferHeight = backBufferHeight;
@@ -285,11 +285,11 @@ void StartSoftwareGraphics (OSState *os, int windowWidth, int windowHeight, int 
 	Only supporting 32 bit floats or 8 bit ints(signed or unsigned)
 	Should you be able to have different rgba order?
 */
-enum SoftwarePixelFormat {
+typedef enum {
 	PIXEL_FORMAT_FLOAT,
 	PIXEL_FORMAT_INT8,
 	PIXEL_FORMAT_UINT8,
-};
+} SoftwarePixelFormat;
 
 void PresentSoftwareBackBuffer (OSState *os, void *data, SoftwarePixelFormat format, int numComponents) {
 	float *video = (float*)data;
