@@ -287,7 +287,6 @@ void StartSoftwareGraphics (OSState *os, int windowWidth, int windowHeight, int 
 */
 typedef enum {
 	PIXEL_FORMAT_FLOAT,
-	PIXEL_FORMAT_INT8,
 	PIXEL_FORMAT_UINT8,
 } SoftwarePixelFormat;
 

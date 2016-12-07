@@ -596,7 +596,7 @@ void Update (State *state) {
 	state->dt = time - state->lastTime;
 	state->lastTime = time;
 	double dt = state->dt;
-	printf("dt %f \n", dt*1000);
+	// printf("dt %f \n", dt*1000);
 
 	Color clearColor = {0};
 	ClearBackBuffer(state, clearColor);

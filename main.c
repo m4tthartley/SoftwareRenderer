@@ -2,7 +2,7 @@
 #include "platform.c"
 #include "software_renderer.c"
 
-void PresentBackBufferOGL (OSState *os, State *state) {
+void DisplayHardwareGraphics (OSState *os, State *state) {
 	static GLuint backBuffer = 0;
 	if (!backBuffer) {
 		glGenTextures(1, &backBuffer);
@@ -60,9 +60,21 @@ int main (int argc, char**argv)
 		Update(&state);
 
 #if 0
-		PresentBackBufferOGL(&os, &state);
+		DisplayHardwareGraphics(&os, &state);
 #else
-		PresentSoftwareBackBuffer(&os, state.video, PIXEL_FORMAT_FLOAT, 4);
+
+		/*static uint *testData = NULL;
+		if (!testData) {
+			testData = malloc(os.backBufferWidth*os.backBufferHeight*sizeof(uint));
+		}
+		testData[0] = 0xFF00FFFF;
+		testData[1] = 0x00FFFFFF;
+		testData[2] = 0xFF0000FF;
+		testData[3] = 0x00FF00FF;
+		testData[4] = 0x0000FFFF;
+		DisplaySoftwareGraphics(&os, testData, PIXEL_FORMAT_UBYTE, 4);*/
+
+		DisplaySoftwareGraphics(&os, state.video, PIXEL_FORMAT_FLOAT, 4);
 #endif
 	}
 }
