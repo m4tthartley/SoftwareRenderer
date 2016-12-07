@@ -9,6 +9,9 @@ typedef int16_t int16;
 typedef uint16_t uint16;
 typedef int8_t int8;
 typedef uint8_t uint8;
+#ifdef _WIN32
+typedef unsigned int uint;
+#endif
 
 #define ZeroStruct(s) memset(&(s), 0, sizeof(s))
 

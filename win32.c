@@ -287,21 +287,38 @@ void StartSoftwareGraphics (OSState *os, int windowWidth, int windowHeight, int 
 */
 typedef enum {
 	PIXEL_FORMAT_FLOAT,
-	PIXEL_FORMAT_UINT8,
+	PIXEL_FORMAT_UBYTE,
 } SoftwarePixelFormat;
 
-void PresentSoftwareBackBuffer (OSState *os, void *data, SoftwarePixelFormat format, int numComponents) {
-	float *video = (float*)data;
+void DisplaySoftwareGraphics (OSState *os, void *data, SoftwarePixelFormat format, int numComponents) {
 	unsigned int *pixels = (unsigned int*)os->videoMemory;
-	for (int i = 0; i < os->backBufferWidth*os->backBufferHeight; ++i) {
-		unsigned char a = video[(i*numComponents)+3]*255;
-		unsigned char r = video[(i*numComponents)+0]*255;
-		unsigned char g = video[(i*numComponents)+1]*255;
-		unsigned char b = video[(i*numComponents)+2]*255;
-		pixels[i] = (a << 24) | (r << 16) | (g << 8) | (b);
-		// pixels[i] = (b << 24) | (g << 16) | (r << 8) | (a);
-		// pixels[i] = 0xFF00FF00;
-		//               aarrggbb
+
+	if (format == PIXEL_FORMAT_FLOAT) {
+		float *video = data;
+		for (int i = 0; i < os->backBufferWidth*os->backBufferHeight; ++i) {
+			float *v = video + (i*numComponents);
+			int components = numComponents >= 4 ? numComponents : 4;
+			uint8 c[4] = {0};
+			c[3] = 255;
+			for (int cc = 0; cc < components; ++cc) {
+				c[cc] = v[cc]*255.0f;
+			}
+			pixels[i] = (c[3] << 24) | (c[0] << 16) | (c[1] << 8) | (c[2]);
+			// aarrggbb
+		}
+	} else if (format == PIXEL_FORMAT_UBYTE) {
+		uint8 *video = data;
+		for (int i = 0; i < os->backBufferWidth*os->backBufferHeight; ++i) {
+			uint8 *v = video + (i*numComponents);
+			int components = numComponents >= 4 ? numComponents : 4;
+			uint8 c[4] = {0};
+			c[3] = 255;
+			for (int cc = 0; cc < components; ++cc) {
+				c[cc] = v[cc];
+			}
+			pixels[i] = (c[0] << 24) | (c[3] << 16) | (c[2] << 8) | (c[1]);
+			// aarrggbb
+		}
 	}
 	StretchDIBits(os->hdc, 0, 0, os->windowWidth, os->windowHeight, 0, 0, os->backBufferWidth, os->backBufferHeight, os->videoMemory, &os->bitmapInfo, DIB_RGB_COLORS, SRCCOPY);
 }
@@ -311,7 +328,6 @@ void PresentSoftwareBackBuffer (OSState *os, void *data, SoftwarePixelFormat for
 }*/
 
 int CALLBACK WinMain (HINSTANCE hInstance, HINSTANCE prevInstance, LPSTR cmdLine, int cmdShow) {
-	OutputDebugString("YEAH\n");
 	// @note: Hopefully these arg variable are always available
 	main(__argc, __argv);
 }

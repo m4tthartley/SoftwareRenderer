@@ -66,6 +66,7 @@ int main (int argc, char**argv)
 		/*static uint *testData = NULL;
 		if (!testData) {
 			testData = malloc(os.backBufferWidth*os.backBufferHeight*sizeof(uint));
+			memset(testData, 0, os.backBufferWidth*os.backBufferHeight*sizeof(uint));
 		}
 		testData[0] = 0xFF00FFFF;
 		testData[1] = 0x00FFFFFF;
