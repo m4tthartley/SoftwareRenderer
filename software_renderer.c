@@ -591,7 +591,7 @@ void ClearBackBuffer (State *state, Color color) {
 	}
 }
 
-void Update (State *state) {
+void Update (OSState *os, State *state) {
 	double time = GetSeconds();
 	state->dt = time - state->lastTime;
 	state->lastTime = time;
@@ -602,8 +602,16 @@ void Update (State *state) {
 	ClearBackBuffer(state, clearColor);
 
 	static EulerAngle rotation = {0};
-	rotation.x += 0.4f * dt;
-	rotation.y += 0.8f * dt;
+	/*rotation.x += 0.4f * dt;
+	rotation.y += 0.8f * dt;*/
+	rotation.y += KeyPressed(os, KEYBOARD_RIGHT) * 0.03f;
+	rotation.y -= KeyPressed(os, KEYBOARD_LEFT) * 0.03f;
+	rotation.x += KeyDown(os, KEYBOARD_DOWN) * 0.03f;
+	rotation.x -= KeyDown(os, KEYBOARD_UP) * 0.03f;
+
+	rotation.y += KeyDown(os, KEYBOARD_1) * 0.03f;
+	rotation.y -= KeyDown(os, KEYBOARD_2) * 0.03f;
+
 	// rotation.z += 0.4f * dt;
 
 	// if (state->input.rightDown) {

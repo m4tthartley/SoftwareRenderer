@@ -3,8 +3,65 @@
 
 #include <windows.h>
 #include <GL/gl.h>
+#include <dsound.h>
 
 #include <stdio.h>
+
+typedef enum {
+	KEYBOARD_A = 'A',
+	KEYBOARD_B = 'B',
+	KEYBOARD_C = 'C',
+	KEYBOARD_D = 'D',
+	KEYBOARD_E = 'E',
+	KEYBOARD_F = 'F',
+	KEYBOARD_G = 'G',
+	KEYBOARD_H = 'H',
+	KEYBOARD_I = 'I',
+	KEYBOARD_J = 'J',
+	KEYBOARD_K = 'K',
+	KEYBOARD_L = 'L',
+	KEYBOARD_M = 'M',
+	KEYBOARD_N = 'N',
+	KEYBOARD_O = 'O',
+	KEYBOARD_P = 'P',
+	KEYBOARD_Q = 'Q',
+	KEYBOARD_R = 'R',
+	KEYBOARD_S = 'S',
+	KEYBOARD_T = 'T',
+	KEYBOARD_U = 'U',
+	KEYBOARD_V = 'V',
+	KEYBOARD_W = 'W',
+	KEYBOARD_X = 'X',
+	KEYBOARD_Y = 'Y',
+	KEYBOARD_Z = 'Z',
+
+	KEYBOARD_1 = '1',
+	KEYBOARD_2 = '2',
+	KEYBOARD_3 = '3',
+	KEYBOARD_4 = '4',
+	KEYBOARD_5 = '5',
+	KEYBOARD_6 = '6',
+	KEYBOARD_7 = '7',
+	KEYBOARD_8 = '8',
+	KEYBOARD_9 = '9',
+	KEYBOARD_0 = '0',
+
+	KEYBOARD_LEFT = VK_LEFT,
+	KEYBOARD_RIGHT = VK_RIGHT,
+	KEYBOARD_UP = VK_UP,
+	KEYBOARD_DOWN = VK_DOWN,
+
+	KEYBOARD_CTRL = VK_CONTROL,
+	KEYBOARD_LSHIFT = VK_LSHIFT,
+	KEYBOARD_RSHIFT = VK_RSHIFT,
+	KEYBOARD_ALT = VK_MENU,
+	KEYBOARD_CAPS = VK_CAPITAL,
+	KEYBOARD_TAB = VK_TAB,
+	KEYBOARD_SPACE = VK_SPACE,
+	KEYBOARD_RETURN = VK_RETURN,
+	KEYBOARD_BACKSPACE = VK_BACK,
+
+} KeyID;
 
 /*#define WINDOW_WIDTH 1920
 #define WINDOW_HEIGHT 1080*/
@@ -22,6 +79,10 @@ typedef struct {
 	int backBufferWidth;
 	int backBufferHeight;
 	bool windowOpen;
+	struct {
+		bool keys[256];
+		bool keysLast[256];
+	} input;
 } OSState;
 
 OSState *_globalState;
@@ -111,6 +172,10 @@ void AddResult (void *udata) {
 }
 
 void PollEvents (OSState *os) {
+	// memset(&os->input.
+	//os->input.keysLast[Message.wParam] = os->input.keys[Message.wParam];
+	memcpy(os->input.keysLast, os->input.keys, sizeof(os->input.keys));
+
 	MSG Message;
 	while (PeekMessage(&Message, 0, 0, 0, PM_REMOVE)) {
 		switch (Message.message) {
@@ -124,13 +189,19 @@ void PollEvents (OSState *os) {
 						// state.input.rightDown = true;
 					} break;
 				}
+
+				os->input.keys[Message.wParam] = true;
+			} break;
+
+			case WM_SYSKEYUP:
+			case WM_KEYUP: {
+				os->input.keys[Message.wParam] = false;
 			} break;
 
 			case WM_QUIT: {
 				_globalState->windowOpen = false;
 			} break;
-			default:
-			{
+			default: {
 				TranslateMessage(&Message);
 				DispatchMessageA(&Message);
 			}
@@ -139,8 +210,12 @@ void PollEvents (OSState *os) {
 	}
 }
 
-void SwapGLBuffers (OSState *os) {
-	SwapBuffers(os->hdc);
+bool KeyDown (OSState *os, KeyID key) {
+	return os->input.keys[key];
+}
+
+bool KeyPressed (OSState *os, KeyID key) {
+	return os->input.keys[key] && !os->input.keysLast[key];
 }
 
 void StartSoftwareGraphics (OSState *os, int windowWidth, int windowHeight, int backBufferWidth, int backBufferHeight) {
@@ -323,6 +398,10 @@ void DisplaySoftwareGraphics (OSState *os, void *data, SoftwarePixelFormat forma
 	StretchDIBits(os->hdc, 0, 0, os->windowWidth, os->windowHeight, 0, 0, os->backBufferWidth, os->backBufferHeight, os->videoMemory, &os->bitmapInfo, DIB_RGB_COLORS, SRCCOPY);
 }
 
+void DisplayHardwareGraphics (OSState *os) {
+	SwapBuffers(os->hdc);
+}
+
 /*int CALLBACK WinMain (HINSTANCE hInstance, HINSTANCE prevInstance, LPSTR cmdLine, int cmdShow) {
 	
 }*/
@@ -330,4 +409,194 @@ void DisplaySoftwareGraphics (OSState *os, void *data, SoftwarePixelFormat forma
 int CALLBACK WinMain (HINSTANCE hInstance, HINSTANCE prevInstance, LPSTR cmdLine, int cmdShow) {
 	// @note: Hopefully these arg variable are always available
 	main(__argc, __argv);
+}
+
+// Audio
+
+#pragma pack(push, 1)
+typedef struct {
+	char ChunkId[4];
+	uint ChunkSize;
+	char WaveId[4];
+} WavHeader;
+typedef struct {
+	char id[4];
+	uint size;
+	uint16 formatTag;
+	uint16 channels;
+	uint samplesPerSec;
+	uint bytesPerSec;
+	uint16 blockAlign;
+	uint16 bitsPerSample;
+	uint16 cbSize;
+	int16 validBitsPerSample;
+	int channelMask;
+	char subFormat[16];
+} WavFormatChunk;
+typedef struct {
+	char id[4];
+	uint size;
+	int16 *data;
+	char padByte;
+} WavDataChunk;
+/*typedef struct {
+	WavHeader header;
+	WavFormatChunk format;
+	int16 *data;
+	uint dataSize;
+	file_data file;
+} WavData;*/
+#pragma pack(pop)
+
+typedef struct {
+	int channels;
+	int samplesPerSec;
+	int bitsPerSample;
+	void *data;
+	size_t size;
+} Sound;
+
+Sound LoadSoundFromMemory (void *data, size_t size) {
+	WavHeader *header = data;
+	WavFormatChunk *format;
+	WavDataChunk *dataChunk;
+	char *f = (char*)(header + 1);
+	while (f < (char*)data + size) {
+		int id = *(int*)f;
+		uint size = *(uint*)(f+4);
+		if (id == (('f'<<0)|('m'<<8)|('t'<<16)|(' '<<24))) {
+			format = (WavFormatChunk*)f;
+		}
+		if (id == (('d'<<0)|('a'<<8)|('t'<<16)|('a'<<24))) {
+			dataChunk = (WavDataChunk*)f;
+		}
+		f += size + 8;
+	}
+
+	Sound sound;
+	sound.channels = format->channels;
+	sound.samplesPerSec = format->samplesPerSec;
+	sound.bitsPerSample = format->bitsPerSample;
+	sound.data = dataChunk->data;
+	sound.size = dataChunk->size;
+	return sound;
+}
+
+typedef HRESULT WINAPI DirectSoundCreateProc (LPCGUID pcGuidDevice, LPDIRECTSOUND *ppDS, LPUNKNOWN pUnkOuter);
+
+LPDIRECTSOUND dsound;
+LPDIRECTSOUNDBUFFER primaryBuffer;
+LPDIRECTSOUNDBUFFER secondaryBuffer;
+void InitSound (OSState *os) {
+	HMODULE dsoundLib = LoadLibraryA("dsound.dll");
+	if (!dsoundLib) {
+		printf("Error loading dsound.dll\n");
+		goto error;
+	}
+		// HRESULT WINAPI (*)(LPCGUID pcGuidDevice, LPDIRECTSOUND *ppDS, LPUNKNOWN pUnkOuter)
+		// HRESULT WINAPI (*DirectSoundCreate)(LPCGUID pcGuidDevice, LPDIRECTSOUND *ppDS, LPUNKNOWN pUnkOuter)
+		// 	= GetProcAddress(dsoundLib, "DirectSoundCreate");
+		// DirectSoundCreateProc DirectSoundCreate = GetProcAddress(dsoundLib, "DirectSoundCreate");
+	DirectSoundCreateProc *DirectSoundCreate = (DirectSoundCreateProc*)GetProcAddress(dsoundLib, "DirectSoundCreate");
+	if (!DirectSoundCreate) {
+		printf("Error loading DirectSoundCreate proc\n");
+		goto error;
+	}
+
+	if (!SUCCEEDED(DirectSoundCreate(0, &dsound, 0))) {
+		printf("DirectSoundCreate error\n");
+		goto error;
+	}
+
+	WAVEFORMATEX wave = {0};
+	wave.wFormatTag = WAVE_FORMAT_PCM;
+	wave.nChannels = 2;
+	wave.nSamplesPerSec = 48000;
+	wave.wBitsPerSample = 16;
+	wave.nBlockAlign = 4;
+	wave.nAvgBytesPerSec = 48000 * 4;
+
+	if (!SUCCEEDED(IDirectSound_SetCooperativeLevel(dsound, os->_window, DSSCL_PRIORITY))) {
+		printf("IDirectSound_SetCooperativeLevel error\n");
+		goto error;
+	}
+
+	DSBUFFERDESC desc = {0};
+	desc.dwSize = sizeof(DSBUFFERDESC);
+	desc.dwFlags = DSBCAPS_PRIMARYBUFFER;
+	if (!SUCCEEDED(IDirectSound_CreateSoundBuffer(dsound, &desc, &primaryBuffer, 0))) {
+		printf("IDirectSound_CreateSoundBuffer error\n");
+		goto error;
+	}
+
+	if (!SUCCEEDED(IDirectSoundBuffer_SetFormat(primaryBuffer, &wave))) {
+		printf("IDirectSoundBuffer_SetFormat error\n");
+		goto error;
+	}
+
+	DSBUFFERDESC desc2 = {0};
+	desc2.dwSize = sizeof(DSBUFFERDESC);
+	desc2.dwFlags = DSBCAPS_GLOBALFOCUS|DSBCAPS_GETCURRENTPOSITION2;
+	desc2.dwBufferBytes = 48000 * 4;
+	desc2.lpwfxFormat = &wave;
+	if (!SUCCEEDED(IDirectSound_CreateSoundBuffer(dsound, &desc2, &secondaryBuffer, 0))) {
+		printf("IDirectSound_CreateSoundBuffer error\n");
+		goto error;
+	}
+
+	IDirectSoundBuffer_SetCurrentPosition(secondaryBuffer, 0);
+	IDirectSoundBuffer_Play(secondaryBuffer, 0, 0, DSBPLAY_LOOPING);
+
+	printf("Initialized DirectSound\n");
+	return;
+
+error:
+	printf("Failed to initialize DirectSound\n");
+}
+
+int lastChunkWritten = 0;
+void UpdateSound (OSState *os) {
+	uint playCursor;
+	uint writeCursor;
+	HRESULT result;
+	if (result = IDirectSoundBuffer_GetCurrentPosition(secondaryBuffer, &playCursor, &writeCursor) != DS_OK) {
+		printf("IDirectSoundBuffer_GetCurrentPosition error\n");
+		return;
+	}
+
+	int chunkSize = 4800;
+	int chunk = (writeCursor/4 / (chunkSize)) + 1;
+	int lock = chunk*chunkSize*4;
+	if (chunk != lastChunkWritten) {
+		void *region1;
+		uint region1Size;
+		void *region2;
+		uint region2Size;
+		if (IDirectSoundBuffer_Lock(secondaryBuffer, lock, chunkSize*4,
+									&region1, &region1Size, &region2, &region2Size, 0) != DS_OK) {
+			printf("IDirectSoundBuffer_Lock error\n");
+			return;
+		}
+
+		static float amp = 0.0f;
+		int16 *sample = region1;
+		for (int i = 0; i < region1Size/4; ++i) {
+			amp += 0.01f;
+			sample[0] = (sinf(amp) * 100/*((float)0x7FFF/20)*/);
+			sample[1] = (sinf(amp) * 100/*((float)0x7FFF/20)*/);
+			sample += 2;
+		}
+		if (region2) {
+			int16 *sample = region2;
+			for (int i = 0; i < region2Size/4; ++i) {
+				amp += 0.01f;
+				sample[0] = (sinf(amp) * 100/*((float)0x7FFF/20)*/);
+				sample[1] = (sinf(amp) * 100/*((float)0x7FFF/20)*/);
+				sample += 2;
+			}
+		}
+
+		IDirectSoundBuffer_Unlock(secondaryBuffer, region1, region1Size, region2, region2Size);
+		lastChunkWritten = chunk;
+	}
 }

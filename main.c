@@ -2,7 +2,7 @@
 #include "platform.c"
 #include "software_renderer.c"
 
-void DisplayHardwareGraphics (OSState *os, State *state) {
+void GLDisplayFrame (OSState *os, State *state) {
 	static GLuint backBuffer = 0;
 	if (!backBuffer) {
 		glGenTextures(1, &backBuffer);
@@ -26,8 +26,6 @@ void DisplayHardwareGraphics (OSState *os, State *state) {
 		glTexCoord2f(1.0f, 1.0f); glVertex2f(1.0f, 1.0f);
 		glTexCoord2f(0.0f, 1.0f); glVertex2f(-1.0f, 1.0f);
 	}glEnd();
-
-	SwapGLBuffers(os);
 }
 
 //#ifdef _WIN32
@@ -36,10 +34,20 @@ void DisplayHardwareGraphics (OSState *os, State *state) {
 int main (int argc, char**argv)
 //#endif
 {
+	freopen("stdout.txt", "a", stdout);
+
 	// StartGPUGraphics();
 	// StartCPUGraphics();
 
 	// StartHardwareGraphics();
+
+	FILE *sound = fopen("Sleep_Away.wav", "rb");
+	fseek(sound, 0, SEEK_END);
+	int soundSize = ftell(sound);
+	fseek(sound, 0, SEEK_SET);
+	void *soundData = malloc(soundSize);
+	fread(soundData, 1, soundSize, sound);
+	LoadSoundFromMemory(soundData, soundSize);
 
 	State state = {0};
 	Start(&state);
@@ -51,16 +59,21 @@ int main (int argc, char**argv)
 	StartSoftwareGraphics(&os, 1280, 720, state.backBufferSize.x, state.backBufferSize.y);
 #endif
 
+	InitSound(&os);
+
 	while (os.windowOpen) {
 		// state.input = {};
 		ZeroStruct(state.input);
 
 		PollEvents(&os);
 
-		Update(&state);
+		Update(&os, &state);
+
+		UpdateSound(&os);
 
 #if 0
-		DisplayHardwareGraphics(&os, &state);
+		GLDisplayFrame(&os, &state);
+		DisplayHardwareGraphics(&os);
 #else
 
 		/*static uint *testData = NULL;
