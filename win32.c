@@ -6,6 +6,7 @@
 #include <dsound.h>
 
 #include <stdio.h>
+#include <math.h>
 
 typedef enum {
 	KEYBOARD_A = 'A',
@@ -436,7 +437,7 @@ typedef struct {
 typedef struct {
 	char id[4];
 	uint size;
-	int16 *data;
+	void *data;
 	char padByte;
 } WavDataChunk;
 /*typedef struct {
@@ -469,6 +470,7 @@ Sound LoadSoundFromMemory (void *data, size_t size) {
 		}
 		if (id == (('d'<<0)|('a'<<8)|('t'<<16)|('a'<<24))) {
 			dataChunk = (WavDataChunk*)f;
+			dataChunk->data = f + 8;
 		}
 		f += size + 8;
 	}
@@ -483,6 +485,8 @@ Sound LoadSoundFromMemory (void *data, size_t size) {
 }
 
 typedef HRESULT WINAPI DirectSoundCreateProc (LPCGUID pcGuidDevice, LPDIRECTSOUND *ppDS, LPUNKNOWN pUnkOuter);
+
+#define SOUND_SAMPLES_PER_SEC 48000
 
 LPDIRECTSOUND dsound;
 LPDIRECTSOUNDBUFFER primaryBuffer;
@@ -511,10 +515,10 @@ void InitSound (OSState *os) {
 	WAVEFORMATEX wave = {0};
 	wave.wFormatTag = WAVE_FORMAT_PCM;
 	wave.nChannels = 2;
-	wave.nSamplesPerSec = 48000;
+	wave.nSamplesPerSec = SOUND_SAMPLES_PER_SEC;
 	wave.wBitsPerSample = 16;
 	wave.nBlockAlign = 4;
-	wave.nAvgBytesPerSec = 48000 * 4;
+	wave.nAvgBytesPerSec = SOUND_SAMPLES_PER_SEC * 4;
 
 	if (!SUCCEEDED(IDirectSound_SetCooperativeLevel(dsound, os->_window, DSSCL_PRIORITY))) {
 		printf("IDirectSound_SetCooperativeLevel error\n");
@@ -537,7 +541,7 @@ void InitSound (OSState *os) {
 	DSBUFFERDESC desc2 = {0};
 	desc2.dwSize = sizeof(DSBUFFERDESC);
 	desc2.dwFlags = DSBCAPS_GLOBALFOCUS|DSBCAPS_GETCURRENTPOSITION2;
-	desc2.dwBufferBytes = 48000 * 4;
+	desc2.dwBufferBytes = SOUND_SAMPLES_PER_SEC * 4;
 	desc2.lpwfxFormat = &wave;
 	if (!SUCCEEDED(IDirectSound_CreateSoundBuffer(dsound, &desc2, &secondaryBuffer, 0))) {
 		printf("IDirectSound_CreateSoundBuffer error\n");
@@ -555,6 +559,93 @@ error:
 }
 
 int lastChunkWritten = 0;
+typedef union {
+	struct {
+		int16 left;
+		int16 right;
+	};
+	int16 channels[2];
+} SoundSample;
+
+typedef struct {
+	SoundSample *data;
+	int numSamples;
+	int cursor;
+	int lastWriteCursor;
+} PlayingSound;
+
+PlayingSound playingSounds[64];
+int playingSoundCount = 0;
+
+void SoundPlay (Sound sound) {
+	playingSounds[playingSoundCount].data = sound.data;
+	playingSounds[playingSoundCount].numSamples = sound.size/4;
+	playingSounds[playingSoundCount].cursor = 0;
+	playingSounds[playingSoundCount].lastWriteCursor = 0;
+	++playingSoundCount;
+}
+
+void MixSound (SoundSample *output, int sampleCursor, int numSamples, int16 *debugOutput) {
+	float volume = 0.25f;
+
+	for (int i = 0; i < numSamples; ++i) {
+		output[i].left = 0;
+		output[i].right = 0;
+	}
+
+	for (int i = 0; i < playingSoundCount; ++i) {
+		int writeEnd = (sampleCursor + numSamples) /*% SOUND_SAMPLES_PER_SEC*/;
+		int writeAmount = writeEnd - playingSounds[i].lastWriteCursor;
+		if (writeAmount > numSamples) {
+			// Assert(false);
+			writeAmount = numSamples;
+		}
+
+		int samplesLeft = playingSounds[i].numSamples - playingSounds[i].cursor;
+		if (samplesLeft <= 0) {
+			playingSounds[i] = playingSounds[playingSoundCount-1];
+			--playingSoundCount;
+			return;
+		}
+		// int writeSamples = playingSounds[i].started ? numSamples : chunkNumSamples;
+		int samplesToMix = samplesLeft < writeAmount ? samplesLeft : writeAmount;
+		// if (playingSounds[i].lastWriteCursor
+		int start = playingSounds[i].lastWriteCursor - sampleCursor;
+		if (start < 0) Assert(false);
+		if (start > /*sampleCursor +*/ numSamples) Assert(false);
+		if (samplesToMix > (/*sampleCursor+*/numSamples)-start) Assert(false);
+		for (int j = start; j < start + samplesToMix; ++j) {
+			
+			float left = ((float)playingSounds[i].data[playingSounds[i].cursor].left / (float)0x7FFF) * volume;
+			float right = ((float)playingSounds[i].data[playingSounds[i].cursor].right / (float)0x7FFF) * volume;
+			//output[j].left + playingSounds[i].data[playingSounds[i].cursor].left * volume;
+			//output[j].right + playingSounds[i].data[playingSounds[i].cursor].right * volume;
+
+			/*if (left > 32000.0f) left = 32000.0f;
+			if (left < -32000.0f) left = -32000.0f;
+			if (right > 32000.0f) right = 32000.0f;
+			if (right < -32000.0f) right = -32000.0f;*/
+
+			int l = output[j].left + left*0x7FFF;
+			int r = output[j].right + right*0x7FFF;
+			// if (l > 0x7FFF) l = 0x7FFF;
+			// if (l < -0x7FFF) l = -0x7FFF;
+			// if (r > 0x7FFF) r = 0x7FFF;
+			// if (r < -0x7FFF) r = -0x7FFF;
+
+			output[j].left = l;
+			output[j].right = r;
+			debugOutput[j] += left * 0x7FFF;
+			++playingSounds[i].cursor;
+			// ++playingSounds[i].lastWriteCursor;
+		}
+
+		playingSounds[i].lastWriteCursor = sampleCursor + start + samplesToMix;
+		playingSounds[i].lastWriteCursor %= SOUND_SAMPLES_PER_SEC;
+	}
+}
+
+int16 debugSoundBuffer[SOUND_SAMPLES_PER_SEC];
 void UpdateSound (OSState *os) {
 	uint playCursor;
 	uint writeCursor;
@@ -564,10 +655,17 @@ void UpdateSound (OSState *os) {
 		return;
 	}
 
-	int chunkSize = 4800;
+	if (writeCursor % 4 != 0) {
+		Assert(false);
+	}
+
+	int chunkSize = (SOUND_SAMPLES_PER_SEC/10)*1;
 	int chunk = (writeCursor/4 / (chunkSize)) + 1;
-	int lock = chunk*chunkSize*4;
-	if (chunk != lastChunkWritten) {
+
+	chunk %= SOUND_SAMPLES_PER_SEC/chunkSize;
+	int chunklock = chunk*chunkSize*4;
+	int lock = writeCursor;
+	/*if (chunk != lastChunkWritten)*/ {
 		void *region1;
 		uint region1Size;
 		void *region2;
@@ -578,23 +676,33 @@ void UpdateSound (OSState *os) {
 			return;
 		}
 
+		MixSound(region1, lock/4, region1Size/4, debugSoundBuffer+(lock/4));
+		if (region2) {
+			MixSound(region2, 0, region2Size/4, debugSoundBuffer+(lock/4));
+		}
+
+#if 0
 		static float amp = 0.0f;
 		int16 *sample = region1;
 		for (int i = 0; i < region1Size/4; ++i) {
-			amp += 0.01f;
-			sample[0] = (sinf(amp) * 100/*((float)0x7FFF/20)*/);
-			sample[1] = (sinf(amp) * 100/*((float)0x7FFF/20)*/);
+			amp += 0.05f;
+			float s = sinf(amp);
+			sample[0] = (sinf(amp) * 1000/*((float)0x7FFF/20)*/);
+			sample[1] = (sinf(amp) * 1000/*((float)0x7FFF/20)*/);
+			debugSoundBuffer[(lock/4)+i] = (sinf(amp) * 1000.0f);
 			sample += 2;
 		}
 		if (region2) {
 			int16 *sample = region2;
 			for (int i = 0; i < region2Size/4; ++i) {
-				amp += 0.01f;
-				sample[0] = (sinf(amp) * 100/*((float)0x7FFF/20)*/);
-				sample[1] = (sinf(amp) * 100/*((float)0x7FFF/20)*/);
+				amp += 0.05f;
+				sample[0] = (sinf(amp) * 1000/*((float)0x7FFF/20)*/);
+				sample[1] = (sinf(amp) * 1000/*((float)0x7FFF/20)*/);
+				// debugSoundBuffer[(lock/4)+i] = sinf(amp) * 100;
 				sample += 2;
 			}
 		}
+#endif
 
 		IDirectSoundBuffer_Unlock(secondaryBuffer, region1, region1Size, region2, region2Size);
 		lastChunkWritten = chunk;

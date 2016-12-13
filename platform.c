@@ -13,6 +13,7 @@ typedef uint8_t uint8;
 typedef unsigned int uint;
 #endif
 
+#define Assert(expr) if (!(expr)) { *(int*)0 = 0; }
 #define ZeroStruct(s) memset(&(s), 0, sizeof(s))
 
 #ifdef _WIN32

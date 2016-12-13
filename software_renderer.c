@@ -9,7 +9,7 @@
 typedef float real;
 typedef double real64;
 
-#define Assert(expression) if (!(expression)) { *((int*)0) = 0; }
+// #define Assert(expression) if (!(expression)) { *((int*)0) = 0; }
 
 typedef struct {
 	float r;
@@ -578,11 +578,14 @@ void DrawPoint (State *state, float x, float y, Color color) {
 
 	int px = screenPos.x;
 	int py = screenPos.y;
-	state->video[VideoMemoryOffset(px, py)] = c0;
-	state->video[VideoMemoryOffset(px+1, py)] = c1;
-	state->video[VideoMemoryOffset(px+1, py+1)] = c2;
-	state->video[VideoMemoryOffset(px, py+1)] = c3;
-	int i = 0;
+	if (VideoMemoryOffset(px, py) > 0 &&
+		VideoMemoryOffset(px+1, py+1) < state->backBufferSize.x*state->backBufferSize.y) {
+		state->video[VideoMemoryOffset(px, py)] = c0;
+		state->video[VideoMemoryOffset(px+1, py)] = c1;
+		state->video[VideoMemoryOffset(px+1, py+1)] = c2;
+		state->video[VideoMemoryOffset(px, py+1)] = c3;
+		int i = 0;
+	}
 }
 
 void ClearBackBuffer (State *state, Color color) {
@@ -602,15 +605,19 @@ void Update (OSState *os, State *state) {
 	ClearBackBuffer(state, clearColor);
 
 	static EulerAngle rotation = {0};
-	/*rotation.x += 0.4f * dt;
-	rotation.y += 0.8f * dt;*/
+	rotation.x += 0.8f * dt;
+	/*rotation.y += 0.8f * dt;*/
 	rotation.y += KeyPressed(os, KEYBOARD_RIGHT) * 0.03f;
 	rotation.y -= KeyPressed(os, KEYBOARD_LEFT) * 0.03f;
-	rotation.x += KeyDown(os, KEYBOARD_DOWN) * 0.03f;
-	rotation.x -= KeyDown(os, KEYBOARD_UP) * 0.03f;
+	// rotation.x += KeyDown(os, KEYBOARD_DOWN) * 0.03f;
+	// rotation.x -= KeyDown(os, KEYBOARD_UP) * 0.03f;
 
 	rotation.y += KeyDown(os, KEYBOARD_1) * 0.03f;
 	rotation.y -= KeyDown(os, KEYBOARD_2) * 0.03f;
+
+	if (KeyPressed(os, KEYBOARD_SPACE)) {
+		// SoundPlay(shootSound);
+	}
 
 	// rotation.z += 0.4f * dt;
 

@@ -1,5 +1,6 @@
 
 #include "platform.c"
+
 #include "software_renderer.c"
 
 void GLDisplayFrame (OSState *os, State *state) {
@@ -41,14 +42,6 @@ int main (int argc, char**argv)
 
 	// StartHardwareGraphics();
 
-	FILE *sound = fopen("Sleep_Away.wav", "rb");
-	fseek(sound, 0, SEEK_END);
-	int soundSize = ftell(sound);
-	fseek(sound, 0, SEEK_SET);
-	void *soundData = malloc(soundSize);
-	fread(soundData, 1, soundSize, sound);
-	LoadSoundFromMemory(soundData, soundSize);
-
 	State state = {0};
 	Start(&state);
 
@@ -70,6 +63,18 @@ int main (int argc, char**argv)
 		Update(&os, &state);
 
 		UpdateSound(&os);
+
+		/*Color white;
+		white.r = 0.0f;
+		white.g = 0.0f;
+		white.b = 1.0f;
+		white.a = 1.0f;
+		DrawPoint(&state, 0.0f, 0.0f, white);
+		for (int i = 0; i < 12000; ++i) {
+			float x = ((float)i/4000.0f)-1.5f;
+			float y = ((float)debugSoundBuffer[i])/1000.0f;
+			DrawPoint(&state, x, y, white);
+		}*/
 
 #if 0
 		GLDisplayFrame(&os, &state);
