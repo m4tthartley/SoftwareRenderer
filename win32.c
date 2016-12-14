@@ -357,6 +357,90 @@ void StartSoftwareGraphics (OSState *os, int windowWidth, int windowHeight, int 
 	}
 }
 
+void InitOpenglVideo (OSState *os, int windowWidth, int windowHeight) {
+	_globalState = os;
+	freopen("stdout.txt", "a", stdout);
+	freopen("stderr.txt", "a", stderr);
+
+	WNDCLASS windowClass = {0};
+	windowClass.style = CS_OWNDC|CS_HREDRAW|CS_VREDRAW;
+	windowClass.lpfnWndProc = WindowCallback;
+	// @note: Apparently getting the hInstance this way can cause issues if used in a dll
+	HMODULE hInstance = GetModuleHandle(NULL);
+	windowClass.hInstance = hInstance;
+	windowClass.lpszClassName = "Win32 window class";
+	windowClass.hCursor = LoadCursor(0, IDC_ARROW);
+
+	os->windowWidth = windowWidth;
+	os->windowHeight = windowHeight;
+	RECT windowRect;
+	windowRect.left = 0;
+	windowRect.right = windowWidth;
+	windowRect.top = 0;
+	windowRect.bottom = windowHeight;
+	AdjustWindowRectEx(&windowRect, WS_OVERLAPPEDWINDOW|WS_VISIBLE, FALSE, 0);
+
+	if (RegisterClassA(&windowClass)) {
+		os->_window = CreateWindowExA(0, windowClass.lpszClassName, "OpenGL", WS_OVERLAPPEDWINDOW|WS_VISIBLE,
+									  CW_USEDEFAULT, CW_USEDEFAULT,
+									  windowRect.right-windowRect.left,
+									  windowRect.bottom-windowRect.top,
+									  0, 0, hInstance, 0);
+
+		if (os->_window) {
+			os->windowOpen = true;
+			UpdateWindow(os->_window);
+
+			os->hdc = GetDC(os->_window);
+
+			{
+				PIXELFORMATDESCRIPTOR pixelFormat = {0};
+				pixelFormat.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+				pixelFormat.nVersion = 1;
+				pixelFormat.iPixelType = PFD_TYPE_RGBA;
+				pixelFormat.dwFlags = PFD_SUPPORT_OPENGL|PFD_DRAW_TO_WINDOW|PFD_DOUBLEBUFFER;
+				pixelFormat.cColorBits = 32;
+				pixelFormat.cAlphaBits = 8;
+				pixelFormat.iLayerType = PFD_MAIN_PLANE;
+
+				int suggestedIndex = ChoosePixelFormat(os->hdc, &pixelFormat);
+				if (!suggestedIndex) {
+					fprintf(stderr, "ChoosePixelFormat failed\n");
+					goto error;
+				}
+				PIXELFORMATDESCRIPTOR suggested;
+				DescribePixelFormat(os->hdc, suggestedIndex, sizeof(PIXELFORMATDESCRIPTOR), &suggested);
+				if (!SetPixelFormat(os->hdc, suggestedIndex, &suggested)) {
+					fprintf(stderr, "SetPixelFormat failed\n");
+					goto error;
+				}
+
+				HGLRC glContext = wglCreateContext(os->hdc);
+				if (!glContext) {
+					fprintf(stderr, "wglCreateContext failed\n");
+					goto error;
+				}
+				if (!wglMakeCurrent(os->hdc, glContext)) {
+					fprintf(stderr, "wglMakeCurrent failed\n");
+					goto error;
+				}
+			}
+		} else {
+			fprintf(stderr, "Error while creating window\n");
+			goto error;
+		}
+	} else {
+		fprintf(stderr, "Error while registering window class\n");
+		goto error;
+	}
+
+	return;
+error:
+	MessageBox(os->_window, "There was an error initializing OpenGL video", NULL, MB_OK);
+	exit(1);
+}
+
+
 /*
 	Only supporting 32 bit floats or 8 bit ints(signed or unsigned)
 	Should you be able to have different rgba order?
@@ -399,7 +483,7 @@ void DisplaySoftwareGraphics (OSState *os, void *data, SoftwarePixelFormat forma
 	StretchDIBits(os->hdc, 0, 0, os->windowWidth, os->windowHeight, 0, 0, os->backBufferWidth, os->backBufferHeight, os->videoMemory, &os->bitmapInfo, DIB_RGB_COLORS, SRCCOPY);
 }
 
-void DisplayHardwareGraphics (OSState *os) {
+void FinishVideo (OSState *os) {
 	SwapBuffers(os->hdc);
 }
 
@@ -486,7 +570,8 @@ Sound LoadSoundFromMemory (void *data, size_t size) {
 
 typedef HRESULT WINAPI DirectSoundCreateProc (LPCGUID pcGuidDevice, LPDIRECTSOUND *ppDS, LPUNKNOWN pUnkOuter);
 
-#define SOUND_SAMPLES_PER_SEC 48000
+#define SOUND_SAMPLES_PER_SEC (48000/1)
+#define SOUND_MIX_FORWARD 0.05f
 
 LPDIRECTSOUND dsound;
 LPDIRECTSOUNDBUFFER primaryBuffer;
@@ -585,6 +670,7 @@ void SoundPlay (Sound sound) {
 	++playingSoundCount;
 }
 
+#if 0
 void MixSound (SoundSample *output, int sampleCursor, int numSamples, int16 *debugOutput) {
 	float volume = 0.25f;
 
@@ -707,4 +793,232 @@ void UpdateSound (OSState *os) {
 		IDirectSoundBuffer_Unlock(secondaryBuffer, region1, region1Size, region2, region2Size);
 		lastChunkWritten = chunk;
 	}
+}
+#endif
+
+void MixSound (SoundSample *output, int sampleCursor, int numSamples, int16 *debugOutput) {
+	float volume = 0.25f;
+
+	for (int i = 0; i < numSamples; ++i) {
+		output[i].left = 0;
+		output[i].right = 0;
+	}
+
+	for (int i = 0; i < playingSoundCount; ++i) {
+		int writeEnd = (sampleCursor + numSamples) /*% SOUND_SAMPLES_PER_SEC*/;
+		int writeAmount = writeEnd - playingSounds[i].lastWriteCursor;
+		if (writeAmount > numSamples) {
+			// Assert(false);
+			writeAmount = numSamples;
+		}
+
+		int samplesLeft = playingSounds[i].numSamples - playingSounds[i].cursor;
+		if (samplesLeft <= 0) {
+			playingSounds[i] = playingSounds[playingSoundCount-1];
+			--playingSoundCount;
+			return;
+		}
+		// int writeSamples = playingSounds[i].started ? numSamples : chunkNumSamples;
+		int samplesToMix = samplesLeft < writeAmount ? samplesLeft : writeAmount;
+		// if (playingSounds[i].lastWriteCursor
+		int start = playingSounds[i].lastWriteCursor - sampleCursor;
+		if (start < 0) Assert(false);
+		if (start > /*sampleCursor +*/ numSamples) Assert(false);
+		if (samplesToMix > (/*sampleCursor+*/numSamples)-start) Assert(false);
+		for (int j = start; j < start + samplesToMix; ++j) {
+			
+			float left = ((float)playingSounds[i].data[playingSounds[i].cursor].left / (float)0x7FFF) * volume;
+			float right = ((float)playingSounds[i].data[playingSounds[i].cursor].right / (float)0x7FFF) * volume;
+			//output[j].left + playingSounds[i].data[playingSounds[i].cursor].left * volume;
+			//output[j].right + playingSounds[i].data[playingSounds[i].cursor].right * volume;
+
+			/*if (left > 32000.0f) left = 32000.0f;
+			if (left < -32000.0f) left = -32000.0f;
+			if (right > 32000.0f) right = 32000.0f;
+			if (right < -32000.0f) right = -32000.0f;*/
+
+			int l = output[j].left + left*0x7FFF;
+			int r = output[j].right + right*0x7FFF;
+			// if (l > 0x7FFF) l = 0x7FFF;
+			// if (l < -0x7FFF) l = -0x7FFF;
+			// if (r > 0x7FFF) r = 0x7FFF;
+			// if (r < -0x7FFF) r = -0x7FFF;
+
+			output[j].left = l;
+			output[j].right = r;
+			debugOutput[j] += left * 0x7FFF;
+			++playingSounds[i].cursor;
+			// ++playingSounds[i].lastWriteCursor;
+		}
+
+		playingSounds[i].lastWriteCursor = sampleCursor + start + samplesToMix;
+		playingSounds[i].lastWriteCursor %= SOUND_SAMPLES_PER_SEC;
+	}
+}
+
+int16 debugSoundBuffer[SOUND_SAMPLES_PER_SEC];
+int buffers = 0;
+int oldWritePos = 0;
+int paintedEnd = 0;
+SoundSample *buffer = NULL;
+float volume = 0.5f;
+void UpdateSound (OSState *os) {
+	int playCursor;
+	int writeCursor;
+	HRESULT result;
+	if (result = IDirectSoundBuffer_GetCurrentPosition(secondaryBuffer, &playCursor, &writeCursor) != DS_OK) {
+		printf("IDirectSoundBuffer_GetCurrentPosition error\n");
+		return;
+	}
+
+	int writePos = writeCursor / 4; // convert to samples
+
+	if (writePos < oldWritePos) {
+		++buffers;
+		// @todo: do the integer wrapping stuff
+	}
+	int pos = (buffers * SOUND_SAMPLES_PER_SEC) + writePos;
+	oldWritePos = writePos;
+	int paint = paintedEnd;
+	if (paint < pos) paint = pos;
+
+	int end = pos + (SOUND_SAMPLES_PER_SEC * SOUND_MIX_FORWARD);
+	int paintSize = end - paint;
+
+	if (!buffer) {
+		buffer = malloc(SOUND_SAMPLES_PER_SEC * 4);
+	}
+
+	memset(buffer, 0, SOUND_SAMPLES_PER_SEC * 4);
+
+	fprintf(stdout, "paint size %i\n", paintSize);
+
+	for (int i = 0; i < playingSoundCount;) {
+		int samplesToPlay = playingSounds[i].numSamples - playingSounds[i].cursor;
+		if (samplesToPlay <= 0) {
+			playingSounds[i] = playingSounds[playingSoundCount-1];
+			--playingSoundCount;
+		} else {
+			++i;
+		}
+	}
+
+	for (int i = 0; i < playingSoundCount; ++i) {
+		int count = paintSize;
+		int samplesToPlay = playingSounds[i].numSamples - playingSounds[i].cursor;
+		if (samplesToPlay < count) {
+			count = samplesToPlay;
+		}
+		for (int j = 0; j < count; ++j) {
+			SoundSample sample;
+			sample.left = playingSounds[i].data[playingSounds[i].cursor].left * volume;
+			sample.right = playingSounds[i].data[playingSounds[i].cursor].right * volume;
+			++playingSounds[i].cursor;
+			buffer[j].left += sample.left;
+			buffer[j].right += sample.right;
+		}
+	}
+	static float a;
+	for (int j = 0; j < paintSize; ++j) {
+		a += 0.025f;
+		buffer[j].left += sinf(a) * (0x7FFF/2) * volume;
+		buffer[j].right += sinf(a) * (0x7FFF/2) * volume;
+	}
+
+	void *region1;
+	uint region1Size;
+	void *region2;
+	uint region2Size;
+	HRESULT r;
+	if (!paintSize) {
+		fprintf(stderr, "paint size is 0\n");
+		return;
+	}
+	if (r = IDirectSoundBuffer_Lock(secondaryBuffer, (paint%SOUND_SAMPLES_PER_SEC)*4, paintSize*4,
+								&region1, &region1Size, &region2, &region2Size, 0) != DS_OK) {
+		Assert(false);
+		printf("IDirectSoundBuffer_Lock error\n");
+		if (r == DSERR_BUFFERLOST) printf("DSERR_BUFFERLOST\n");
+		if (r == DSERR_INVALIDCALL) printf("DSERR_INVALIDCALL\n");
+		if (r == DSERR_INVALIDPARAM) printf("DSERR_INVALIDPARAM\n");
+		if (r == DSERR_PRIOLEVELNEEDED) printf("DSERR_PRIOLEVELNEEDED\n");
+		return;
+	}
+
+	memcpy(region1, buffer, region1Size);
+	if (region2) {
+		memcpy(region2, buffer + (region1Size/4), region2Size);
+	}
+
+	IDirectSoundBuffer_Unlock(secondaryBuffer, region1, region1Size, region2, region2Size);
+
+	{
+		glColor4f(0.0f, 1.0f, 1.0f, 1.0f);
+		glBegin(GL_LINE_STRIP);
+		// glVertex2f(0.0f, 0.0f);
+		// glVertex2f(0.1f, 0.0f);
+		// glVertex2f(0.1f, 0.1f);
+		for (int i = 0; i < paintSize; ++i) {
+			float x = -1.0f + (2.0f / (float)paintSize)*i;
+			float y = (float)buffer[i].left / (float)0x7FFF;
+			glVertex2f(x, y / volume);
+		}
+		glEnd();
+	}
+
+	/*if (writeCursor % 4 != 0) {
+		Assert(false);
+	}*/
+
+	/*int chunkSize = (SOUND_SAMPLES_PER_SEC/10)*1;
+	int chunk = (writeCursor/4 / (chunkSize)) + 1;
+
+	chunk %= SOUND_SAMPLES_PER_SEC/chunkSize;
+	int chunklock = chunk*chunkSize*4;
+	int lock = writeCursor;*/
+	/*if (chunk != lastChunkWritten)*/
+	{
+		/*void *region1;
+		uint region1Size;
+		void *region2;
+		uint region2Size;
+		if (IDirectSoundBuffer_Lock(secondaryBuffer, lock, chunkSize*4,
+									&region1, &region1Size, &region2, &region2Size, 0) != DS_OK) {
+			printf("IDirectSoundBuffer_Lock error\n");
+			return;
+		}
+
+		MixSound(region1, lock/4, region1Size/4, debugSoundBuffer+(lock/4));
+		if (region2) {
+			MixSound(region2, 0, region2Size/4, debugSoundBuffer+(lock/4));
+		}*/
+
+#if 0
+		static float amp = 0.0f;
+		int16 *sample = region1;
+		for (int i = 0; i < region1Size/4; ++i) {
+			amp += 0.05f;
+			float s = sinf(amp);
+			sample[0] = (sinf(amp) * 1000/*((float)0x7FFF/20)*/);
+			sample[1] = (sinf(amp) * 1000/*((float)0x7FFF/20)*/);
+			debugSoundBuffer[(lock/4)+i] = (sinf(amp) * 1000.0f);
+			sample += 2;
+		}
+		if (region2) {
+			int16 *sample = region2;
+			for (int i = 0; i < region2Size/4; ++i) {
+				amp += 0.05f;
+				sample[0] = (sinf(amp) * 1000/*((float)0x7FFF/20)*/);
+				sample[1] = (sinf(amp) * 1000/*((float)0x7FFF/20)*/);
+				// debugSoundBuffer[(lock/4)+i] = sinf(amp) * 100;
+				sample += 2;
+			}
+		}
+#endif
+
+		/*IDirectSoundBuffer_Unlock(secondaryBuffer, region1, region1Size, region2, region2Size);
+		lastChunkWritten = chunk;*/
+	}
+
+	paintedEnd = end;
 }
