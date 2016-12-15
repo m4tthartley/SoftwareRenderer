@@ -653,7 +653,7 @@ typedef union {
 } SoundSample;
 
 typedef struct {
-	SoundSample *data;
+	Sound *sound;
 	int numSamples;
 	int cursor;
 	int lastWriteCursor;
@@ -662,9 +662,9 @@ typedef struct {
 PlayingSound playingSounds[64];
 int playingSoundCount = 0;
 
-void SoundPlay (Sound sound) {
-	playingSounds[playingSoundCount].data = sound.data;
-	playingSounds[playingSoundCount].numSamples = sound.size/4;
+void SoundPlay (Sound *sound) {
+	playingSounds[playingSoundCount].sound = sound;
+	playingSounds[playingSoundCount].numSamples = sound->size/4;
 	playingSounds[playingSoundCount].cursor = 0;
 	playingSounds[playingSoundCount].lastWriteCursor = 0;
 	++playingSoundCount;
@@ -796,6 +796,7 @@ void UpdateSound (OSState *os) {
 }
 #endif
 
+#if 0
 void MixSound (SoundSample *output, int sampleCursor, int numSamples, int16 *debugOutput) {
 	float volume = 0.25f;
 
@@ -855,13 +856,15 @@ void MixSound (SoundSample *output, int sampleCursor, int numSamples, int16 *deb
 		playingSounds[i].lastWriteCursor %= SOUND_SAMPLES_PER_SEC;
 	}
 }
+#endif
 
 int16 debugSoundBuffer[SOUND_SAMPLES_PER_SEC];
 int buffers = 0;
 int oldWritePos = 0;
 int paintedEnd = 0;
-SoundSample *buffer = NULL;
-float volume = 0.5f;
+// SoundSample *buffer = NULL;
+float volume = 0.25f;
+double oldTime = 0;
 void UpdateSound (OSState *os) {
 	int playCursor;
 	int writeCursor;
@@ -882,14 +885,39 @@ void UpdateSound (OSState *os) {
 	int paint = paintedEnd;
 	if (paint < pos) paint = pos;
 
-	int end = pos + (SOUND_SAMPLES_PER_SEC * SOUND_MIX_FORWARD);
-	int paintSize = end - paint;
+	float mixForward = SOUND_MIX_FORWARD;
+	// if (!oldTime) {
+	// 	oldTime = GetSeconds();
+	// }
+	static bool oldTimeInit = false;
+	if (!oldTimeInit) {
+		oldTime = GetSeconds();
+		oldTimeInit = true;
+	}
+	// static double oldTime = GetSeconds();
+	double time = GetSeconds(); // @todo: nope
+	double timePassed = time - oldTime;
+	float secondsPerFrame = 1.0f / 60.0f;
+	while (timePassed > secondsPerFrame*2.0f) {
+		mixForward *= 2.0f;
+		secondsPerFrame *= 2.0f;
+	}
+	if (mixForward > 0.8f) mixForward = 0.8f;
+	oldTime = time;
 
-	if (!buffer) {
-		buffer = malloc(SOUND_SAMPLES_PER_SEC * 4);
+	if (KeyPressed(os, KEYBOARD_RIGHT)) {
+		char str[64];
+		sprintf(str, "mixForward %f\n", mixForward);
+		OutputDebugString(str);
 	}
 
-	memset(buffer, 0, SOUND_SAMPLES_PER_SEC * 4);
+	int end = pos + (SOUND_SAMPLES_PER_SEC * mixForward);
+	int paintSize = end - paint;
+	if (paintSize < 0) paintSize = 0;
+
+	// if (!buffer) {
+	// 	buffer = malloc(SOUND_SAMPLES_PER_SEC * 4);
+	// }
 
 	fprintf(stdout, "paint size %i\n", paintSize);
 
@@ -903,27 +931,31 @@ void UpdateSound (OSState *os) {
 		}
 	}
 
+	SoundSample *buffer = malloc(SOUND_SAMPLES_PER_SEC * 4);
+	memset(buffer, 0, SOUND_SAMPLES_PER_SEC * 4);
+
 	for (int i = 0; i < playingSoundCount; ++i) {
 		int count = paintSize;
 		int samplesToPlay = playingSounds[i].numSamples - playingSounds[i].cursor;
 		if (samplesToPlay < count) {
 			count = samplesToPlay;
 		}
+		SoundSample *input = playingSounds[i].sound->data;
 		for (int j = 0; j < count; ++j) {
 			SoundSample sample;
-			sample.left = playingSounds[i].data[playingSounds[i].cursor].left * volume;
-			sample.right = playingSounds[i].data[playingSounds[i].cursor].right * volume;
+			sample.left = input[playingSounds[i].cursor].left * volume;
+			sample.right = input[playingSounds[i].cursor].right * volume;
 			++playingSounds[i].cursor;
 			buffer[j].left += sample.left;
 			buffer[j].right += sample.right;
 		}
 	}
-	static float a;
-	for (int j = 0; j < paintSize; ++j) {
-		a += 0.025f;
-		buffer[j].left += sinf(a) * (0x7FFF/2) * volume;
-		buffer[j].right += sinf(a) * (0x7FFF/2) * volume;
-	}
+	// static float a;
+	// for (int j = 0; j < paintSize; ++j) {
+	// 	a += 0.025f;
+	// 	buffer[j].left += sinf(a) * (0x7FFF/2) * volume;
+	// 	buffer[j].right += sinf(a) * (0x7FFF/2) * volume;
+	// }
 
 	void *region1;
 	uint region1Size;
@@ -953,7 +985,7 @@ void UpdateSound (OSState *os) {
 	IDirectSoundBuffer_Unlock(secondaryBuffer, region1, region1Size, region2, region2Size);
 
 	{
-		glColor4f(0.0f, 1.0f, 1.0f, 1.0f);
+		glColor4f(0.0f, 0.0f, 1.0f, 1.0f);
 		glBegin(GL_LINE_STRIP);
 		// glVertex2f(0.0f, 0.0f);
 		// glVertex2f(0.1f, 0.0f);
@@ -965,6 +997,8 @@ void UpdateSound (OSState *os) {
 		}
 		glEnd();
 	}
+
+	free(buffer);
 
 	/*if (writeCursor % 4 != 0) {
 		Assert(false);
