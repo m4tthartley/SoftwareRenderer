@@ -100,6 +100,20 @@ double GetSeconds () {
 	return seconds;
 }
 
+int64 GetTime () {
+	LARGE_INTEGER time;
+	QueryPerformanceCounter(&time);
+	return time.QuadPart;
+}
+
+float ConvertToSeconds (int64 time) {
+	if (!globalPerformanceFrequency.QuadPart) {
+		QueryPerformanceFrequency(&globalPerformanceFrequency);
+	}
+	float seconds = (double)time / (double)globalPerformanceFrequency.QuadPart;
+	return seconds;
+}
+
 LRESULT CALLBACK WindowCallback (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
 	LRESULT result = 0;
 	switch (message) {
@@ -656,18 +670,22 @@ typedef struct {
 	Sound *sound;
 	int numSamples;
 	int cursor;
-	int lastWriteCursor;
+	float cursorFract;
+	// int lastWriteCursor;
 } PlayingSound;
 
 PlayingSound playingSounds[64];
 int playingSoundCount = 0;
 
 void SoundPlay (Sound *sound) {
-	playingSounds[playingSoundCount].sound = sound;
-	playingSounds[playingSoundCount].numSamples = sound->size/4;
-	playingSounds[playingSoundCount].cursor = 0;
-	playingSounds[playingSoundCount].lastWriteCursor = 0;
-	++playingSoundCount;
+	if (sound->channels == 2 && sound->bitsPerSample == 16) {
+		playingSounds[playingSoundCount].sound = sound;
+		playingSounds[playingSoundCount].numSamples = sound->size/4;
+		playingSounds[playingSoundCount].cursor = 0;
+		++playingSoundCount;
+	} else {
+		fprintf(stderr, "Currently only 2 channel 16bit audio is supported!\n");
+	}
 }
 
 #if 0
@@ -864,7 +882,9 @@ int oldWritePos = 0;
 int paintedEnd = 0;
 // SoundSample *buffer = NULL;
 float volume = 0.25f;
-double oldTime = 0;
+int64 oldTime = 0;
+SoundSample visualSamples[SOUND_SAMPLES_PER_SEC];
+int visualCursor = 0;
 void UpdateSound (OSState *os) {
 	int playCursor;
 	int writeCursor;
@@ -886,17 +906,10 @@ void UpdateSound (OSState *os) {
 	if (paint < pos) paint = pos;
 
 	float mixForward = SOUND_MIX_FORWARD;
-	// if (!oldTime) {
-	// 	oldTime = GetSeconds();
-	// }
-	static bool oldTimeInit = false;
-	if (!oldTimeInit) {
-		oldTime = GetSeconds();
-		oldTimeInit = true;
-	}
-	// static double oldTime = GetSeconds();
-	double time = GetSeconds(); // @todo: nope
-	double timePassed = time - oldTime;
+
+	if (!oldTime) oldTime = GetTime();
+	int64 time = GetTime();
+	float timePassed = ConvertToSeconds(time-oldTime);
 	float secondsPerFrame = 1.0f / 60.0f;
 	while (timePassed > secondsPerFrame*2.0f) {
 		mixForward *= 2.0f;
@@ -904,12 +917,6 @@ void UpdateSound (OSState *os) {
 	}
 	if (mixForward > 0.8f) mixForward = 0.8f;
 	oldTime = time;
-
-	if (KeyPressed(os, KEYBOARD_RIGHT)) {
-		char str[64];
-		sprintf(str, "mixForward %f\n", mixForward);
-		OutputDebugString(str);
-	}
 
 	int end = pos + (SOUND_SAMPLES_PER_SEC * mixForward);
 	int paintSize = end - paint;
@@ -919,9 +926,9 @@ void UpdateSound (OSState *os) {
 	// 	buffer = malloc(SOUND_SAMPLES_PER_SEC * 4);
 	// }
 
-	fprintf(stdout, "paint size %i\n", paintSize);
 
-	for (int i = 0; i < playingSoundCount;) {
+	// @todo: reenable
+	/*for (int i = 0; i < playingSoundCount;) {
 		int samplesToPlay = playingSounds[i].numSamples - playingSounds[i].cursor;
 		if (samplesToPlay <= 0) {
 			playingSounds[i] = playingSounds[playingSoundCount-1];
@@ -929,23 +936,42 @@ void UpdateSound (OSState *os) {
 		} else {
 			++i;
 		}
-	}
+	}*/
 
 	SoundSample *buffer = malloc(SOUND_SAMPLES_PER_SEC * 4);
 	memset(buffer, 0, SOUND_SAMPLES_PER_SEC * 4);
 
+	// @todo: since we are lerping forward samples you could read 1 sample too many off the end
 	for (int i = 0; i < playingSoundCount; ++i) {
 		int count = paintSize;
-		int samplesToPlay = playingSounds[i].numSamples - playingSounds[i].cursor;
-		if (samplesToPlay < count) {
-			count = samplesToPlay;
+		float sampleRateRatio = (double)playingSounds[i].sound->samplesPerSec / (double)SOUND_SAMPLES_PER_SEC;
+		int samplesToPlay = (playingSounds[i].numSamples - playingSounds[i].cursor) /** sampleRateRatio*/;
+		if ((samplesToPlay*sampleRateRatio) < count) {
+			count = (samplesToPlay*sampleRateRatio);
 		}
 		SoundSample *input = playingSounds[i].sound->data;
 		for (int j = 0; j < count; ++j) {
 			SoundSample sample;
-			sample.left = input[playingSounds[i].cursor].left * volume;
-			sample.right = input[playingSounds[i].cursor].right * volume;
-			++playingSounds[i].cursor;
+			// int cursorInt = (int)playingSounds[i].cursor;
+			// float amount0 = 1.0f - (playingSounds[i].cursor - (float)cursorInt);
+			// float amount1 = 1.0f - amount0;
+			float amount0 = 1.0f - playingSounds[i].cursorFract;
+			float amount1 = playingSounds[i].cursorFract;
+			sample.left = (input[playingSounds[i].cursor].left*volume*amount0) + (input[playingSounds[i].cursor+1].left*volume*amount1);
+			sample.right = (input[playingSounds[i].cursor].right*volume*amount0) + (input[playingSounds[i].cursor+1].right*volume*amount1);
+			playingSounds[i].cursorFract += sampleRateRatio;
+
+			{
+				// while (playingSounds[i].cursorFract > 1.0f) {
+				// 	playingSounds[i].cursorFract -= 1.0f;
+				// 	++playingSounds[i].cursor;
+				// }
+				int cursorInt = playingSounds[i].cursorFract;
+				playingSounds[i].cursorFract = playingSounds[i].cursorFract - cursorInt;
+				playingSounds[i].cursor += cursorInt;
+			}
+
+			// playingSounds[i].cursor += sampleRateRatio;
 			buffer[j].left += sample.left;
 			buffer[j].right += sample.right;
 		}
@@ -956,6 +982,13 @@ void UpdateSound (OSState *os) {
 	// 	buffer[j].left += sinf(a) * (0x7FFF/2) * volume;
 	// 	buffer[j].right += sinf(a) * (0x7FFF/2) * volume;
 	// }
+
+	for (int i = 0; i < paintSize; ++i) {
+		visualSamples[visualCursor].left = buffer[i].left;
+		visualSamples[visualCursor].right = buffer[i].right;
+		++visualCursor;
+		visualCursor %= SOUND_SAMPLES_PER_SEC;
+	}
 
 	void *region1;
 	uint region1Size;
@@ -969,11 +1002,7 @@ void UpdateSound (OSState *os) {
 	if (r = IDirectSoundBuffer_Lock(secondaryBuffer, (paint%SOUND_SAMPLES_PER_SEC)*4, paintSize*4,
 								&region1, &region1Size, &region2, &region2Size, 0) != DS_OK) {
 		Assert(false);
-		printf("IDirectSoundBuffer_Lock error\n");
-		if (r == DSERR_BUFFERLOST) printf("DSERR_BUFFERLOST\n");
-		if (r == DSERR_INVALIDCALL) printf("DSERR_INVALIDCALL\n");
-		if (r == DSERR_INVALIDPARAM) printf("DSERR_INVALIDPARAM\n");
-		if (r == DSERR_PRIOLEVELNEEDED) printf("DSERR_PRIOLEVELNEEDED\n");
+		fprintf(stderr, "IDirectSoundBuffer_Lock error\n");
 		return;
 	}
 
@@ -984,19 +1013,7 @@ void UpdateSound (OSState *os) {
 
 	IDirectSoundBuffer_Unlock(secondaryBuffer, region1, region1Size, region2, region2Size);
 
-	{
-		glColor4f(0.0f, 0.0f, 1.0f, 1.0f);
-		glBegin(GL_LINE_STRIP);
-		// glVertex2f(0.0f, 0.0f);
-		// glVertex2f(0.1f, 0.0f);
-		// glVertex2f(0.1f, 0.1f);
-		for (int i = 0; i < paintSize; ++i) {
-			float x = -1.0f + (2.0f / (float)paintSize)*i;
-			float y = (float)buffer[i].left / (float)0x7FFF;
-			glVertex2f(x, y / volume);
-		}
-		glEnd();
-	}
+
 
 	free(buffer);
 
