@@ -61,7 +61,7 @@ typedef enum {
 	KEYBOARD_SPACE = VK_SPACE,
 	KEYBOARD_RETURN = VK_RETURN,
 	KEYBOARD_BACKSPACE = VK_BACK,
-
+	KEYBOARD_ESCAPE = VK_ESCAPE,
 } KeyID;
 
 /*#define WINDOW_WIDTH 1920
@@ -672,209 +672,77 @@ typedef struct {
 	int cursor;
 	float cursorFract;
 	// int lastWriteCursor;
+	float fadeSpeed;
+	float fade;
 } PlayingSound;
+
+enum PlayingSoundFlags {
+	SOUND_FADE_IN = (1<<0),
+};
 
 PlayingSound playingSounds[64];
 int playingSoundCount = 0;
 
-void SoundPlay (Sound *sound) {
+void SoundPlay (Sound *sound, int flags) {
 	if (sound->channels == 2 && sound->bitsPerSample == 16) {
 		playingSounds[playingSoundCount].sound = sound;
 		playingSounds[playingSoundCount].numSamples = sound->size/4;
 		playingSounds[playingSoundCount].cursor = 0;
+		playingSounds[playingSoundCount].fadeSpeed = 0.0f;
+		playingSounds[playingSoundCount].fade = 1.0f;
+		if (flags & SOUND_FADE_IN) {
+			playingSounds[playingSoundCount].fadeSpeed = 0.005f;
+			playingSounds[playingSoundCount].fade = 0.0f;
+		}
 		++playingSoundCount;
 	} else {
 		fprintf(stderr, "Currently only 2 channel 16bit audio is supported!\n");
 	}
 }
 
-#if 0
-void MixSound (SoundSample *output, int sampleCursor, int numSamples, int16 *debugOutput) {
-	float volume = 0.25f;
-
-	for (int i = 0; i < numSamples; ++i) {
-		output[i].left = 0;
-		output[i].right = 0;
-	}
-
+void FadeOutSounds () {
 	for (int i = 0; i < playingSoundCount; ++i) {
-		int writeEnd = (sampleCursor + numSamples) /*% SOUND_SAMPLES_PER_SEC*/;
-		int writeAmount = writeEnd - playingSounds[i].lastWriteCursor;
-		if (writeAmount > numSamples) {
-			// Assert(false);
-			writeAmount = numSamples;
-		}
-
-		int samplesLeft = playingSounds[i].numSamples - playingSounds[i].cursor;
-		if (samplesLeft <= 0) {
-			playingSounds[i] = playingSounds[playingSoundCount-1];
-			--playingSoundCount;
-			return;
-		}
-		// int writeSamples = playingSounds[i].started ? numSamples : chunkNumSamples;
-		int samplesToMix = samplesLeft < writeAmount ? samplesLeft : writeAmount;
-		// if (playingSounds[i].lastWriteCursor
-		int start = playingSounds[i].lastWriteCursor - sampleCursor;
-		if (start < 0) Assert(false);
-		if (start > /*sampleCursor +*/ numSamples) Assert(false);
-		if (samplesToMix > (/*sampleCursor+*/numSamples)-start) Assert(false);
-		for (int j = start; j < start + samplesToMix; ++j) {
-			
-			float left = ((float)playingSounds[i].data[playingSounds[i].cursor].left / (float)0x7FFF) * volume;
-			float right = ((float)playingSounds[i].data[playingSounds[i].cursor].right / (float)0x7FFF) * volume;
-			//output[j].left + playingSounds[i].data[playingSounds[i].cursor].left * volume;
-			//output[j].right + playingSounds[i].data[playingSounds[i].cursor].right * volume;
-
-			/*if (left > 32000.0f) left = 32000.0f;
-			if (left < -32000.0f) left = -32000.0f;
-			if (right > 32000.0f) right = 32000.0f;
-			if (right < -32000.0f) right = -32000.0f;*/
-
-			int l = output[j].left + left*0x7FFF;
-			int r = output[j].right + right*0x7FFF;
-			// if (l > 0x7FFF) l = 0x7FFF;
-			// if (l < -0x7FFF) l = -0x7FFF;
-			// if (r > 0x7FFF) r = 0x7FFF;
-			// if (r < -0x7FFF) r = -0x7FFF;
-
-			output[j].left = l;
-			output[j].right = r;
-			debugOutput[j] += left * 0x7FFF;
-			++playingSounds[i].cursor;
-			// ++playingSounds[i].lastWriteCursor;
-		}
-
-		playingSounds[i].lastWriteCursor = sampleCursor + start + samplesToMix;
-		playingSounds[i].lastWriteCursor %= SOUND_SAMPLES_PER_SEC;
+		playingSounds[i].fadeSpeed = -0.005f;
 	}
 }
 
-int16 debugSoundBuffer[SOUND_SAMPLES_PER_SEC];
-void UpdateSound (OSState *os) {
-	uint playCursor;
-	uint writeCursor;
+int GetSoundDeviceWriteCursor () {
+	int playCursor;
+	int writeCursor;
 	HRESULT result;
 	if (result = IDirectSoundBuffer_GetCurrentPosition(secondaryBuffer, &playCursor, &writeCursor) != DS_OK) {
 		printf("IDirectSoundBuffer_GetCurrentPosition error\n");
+		// @todo handle failure
+		return 0; // zero?
+	}
+
+	return writeCursor / 4; // convert to samples
+}
+
+void WriteToSoundDevice (void *buffer, int pos, int size) {
+	void *region1;
+	uint region1Size;
+	void *region2;
+	uint region2Size;
+	HRESULT r;
+	if (!size) {
+		fprintf(stderr, "paint size is 0\n");
+		return;
+	}
+	if (r = IDirectSoundBuffer_Lock(secondaryBuffer, (pos%SOUND_SAMPLES_PER_SEC)*4, size*4,
+								&region1, &region1Size, &region2, &region2Size, 0) != DS_OK) {
+		Assert(false);
+		fprintf(stderr, "IDirectSoundBuffer_Lock error\n");
 		return;
 	}
 
-	if (writeCursor % 4 != 0) {
-		Assert(false);
+	memcpy(region1, buffer, region1Size);
+	if (region2) {
+		memcpy(region2, (char*)buffer + (region1Size), region2Size);
 	}
 
-	int chunkSize = (SOUND_SAMPLES_PER_SEC/10)*1;
-	int chunk = (writeCursor/4 / (chunkSize)) + 1;
-
-	chunk %= SOUND_SAMPLES_PER_SEC/chunkSize;
-	int chunklock = chunk*chunkSize*4;
-	int lock = writeCursor;
-	/*if (chunk != lastChunkWritten)*/ {
-		void *region1;
-		uint region1Size;
-		void *region2;
-		uint region2Size;
-		if (IDirectSoundBuffer_Lock(secondaryBuffer, lock, chunkSize*4,
-									&region1, &region1Size, &region2, &region2Size, 0) != DS_OK) {
-			printf("IDirectSoundBuffer_Lock error\n");
-			return;
-		}
-
-		MixSound(region1, lock/4, region1Size/4, debugSoundBuffer+(lock/4));
-		if (region2) {
-			MixSound(region2, 0, region2Size/4, debugSoundBuffer+(lock/4));
-		}
-
-#if 0
-		static float amp = 0.0f;
-		int16 *sample = region1;
-		for (int i = 0; i < region1Size/4; ++i) {
-			amp += 0.05f;
-			float s = sinf(amp);
-			sample[0] = (sinf(amp) * 1000/*((float)0x7FFF/20)*/);
-			sample[1] = (sinf(amp) * 1000/*((float)0x7FFF/20)*/);
-			debugSoundBuffer[(lock/4)+i] = (sinf(amp) * 1000.0f);
-			sample += 2;
-		}
-		if (region2) {
-			int16 *sample = region2;
-			for (int i = 0; i < region2Size/4; ++i) {
-				amp += 0.05f;
-				sample[0] = (sinf(amp) * 1000/*((float)0x7FFF/20)*/);
-				sample[1] = (sinf(amp) * 1000/*((float)0x7FFF/20)*/);
-				// debugSoundBuffer[(lock/4)+i] = sinf(amp) * 100;
-				sample += 2;
-			}
-		}
-#endif
-
-		IDirectSoundBuffer_Unlock(secondaryBuffer, region1, region1Size, region2, region2Size);
-		lastChunkWritten = chunk;
-	}
+	IDirectSoundBuffer_Unlock(secondaryBuffer, region1, region1Size, region2, region2Size);
 }
-#endif
-
-#if 0
-void MixSound (SoundSample *output, int sampleCursor, int numSamples, int16 *debugOutput) {
-	float volume = 0.25f;
-
-	for (int i = 0; i < numSamples; ++i) {
-		output[i].left = 0;
-		output[i].right = 0;
-	}
-
-	for (int i = 0; i < playingSoundCount; ++i) {
-		int writeEnd = (sampleCursor + numSamples) /*% SOUND_SAMPLES_PER_SEC*/;
-		int writeAmount = writeEnd - playingSounds[i].lastWriteCursor;
-		if (writeAmount > numSamples) {
-			// Assert(false);
-			writeAmount = numSamples;
-		}
-
-		int samplesLeft = playingSounds[i].numSamples - playingSounds[i].cursor;
-		if (samplesLeft <= 0) {
-			playingSounds[i] = playingSounds[playingSoundCount-1];
-			--playingSoundCount;
-			return;
-		}
-		// int writeSamples = playingSounds[i].started ? numSamples : chunkNumSamples;
-		int samplesToMix = samplesLeft < writeAmount ? samplesLeft : writeAmount;
-		// if (playingSounds[i].lastWriteCursor
-		int start = playingSounds[i].lastWriteCursor - sampleCursor;
-		if (start < 0) Assert(false);
-		if (start > /*sampleCursor +*/ numSamples) Assert(false);
-		if (samplesToMix > (/*sampleCursor+*/numSamples)-start) Assert(false);
-		for (int j = start; j < start + samplesToMix; ++j) {
-			
-			float left = ((float)playingSounds[i].data[playingSounds[i].cursor].left / (float)0x7FFF) * volume;
-			float right = ((float)playingSounds[i].data[playingSounds[i].cursor].right / (float)0x7FFF) * volume;
-			//output[j].left + playingSounds[i].data[playingSounds[i].cursor].left * volume;
-			//output[j].right + playingSounds[i].data[playingSounds[i].cursor].right * volume;
-
-			/*if (left > 32000.0f) left = 32000.0f;
-			if (left < -32000.0f) left = -32000.0f;
-			if (right > 32000.0f) right = 32000.0f;
-			if (right < -32000.0f) right = -32000.0f;*/
-
-			int l = output[j].left + left*0x7FFF;
-			int r = output[j].right + right*0x7FFF;
-			// if (l > 0x7FFF) l = 0x7FFF;
-			// if (l < -0x7FFF) l = -0x7FFF;
-			// if (r > 0x7FFF) r = 0x7FFF;
-			// if (r < -0x7FFF) r = -0x7FFF;
-
-			output[j].left = l;
-			output[j].right = r;
-			debugOutput[j] += left * 0x7FFF;
-			++playingSounds[i].cursor;
-			// ++playingSounds[i].lastWriteCursor;
-		}
-
-		playingSounds[i].lastWriteCursor = sampleCursor + start + samplesToMix;
-		playingSounds[i].lastWriteCursor %= SOUND_SAMPLES_PER_SEC;
-	}
-}
-#endif
 
 int16 debugSoundBuffer[SOUND_SAMPLES_PER_SEC];
 int buffers = 0;
@@ -886,15 +754,7 @@ int64 oldTime = 0;
 SoundSample visualSamples[SOUND_SAMPLES_PER_SEC];
 int visualCursor = 0;
 void UpdateSound (OSState *os) {
-	int playCursor;
-	int writeCursor;
-	HRESULT result;
-	if (result = IDirectSoundBuffer_GetCurrentPosition(secondaryBuffer, &playCursor, &writeCursor) != DS_OK) {
-		printf("IDirectSoundBuffer_GetCurrentPosition error\n");
-		return;
-	}
-
-	int writePos = writeCursor / 4; // convert to samples
+	int writePos = GetSoundDeviceWriteCursor();
 
 	if (writePos < oldWritePos) {
 		++buffers;
@@ -922,153 +782,64 @@ void UpdateSound (OSState *os) {
 	int paintSize = end - paint;
 	if (paintSize < 0) paintSize = 0;
 
-	// if (!buffer) {
-	// 	buffer = malloc(SOUND_SAMPLES_PER_SEC * 4);
-	// }
-
-
-	// @todo: reenable
-	/*for (int i = 0; i < playingSoundCount;) {
+	for (int i = playingSoundCount-1; i >= 0; --i) {
+		playingSounds[i].fade += playingSounds[i].fadeSpeed;
+		if (playingSounds[i].fade > 1.0f) {
+			playingSounds[i].fade = 1.0f;
+			playingSounds[i].fadeSpeed = 0.0f;
+		}
 		int samplesToPlay = playingSounds[i].numSamples - playingSounds[i].cursor;
-		if (samplesToPlay <= 0) {
+		if (samplesToPlay <= 0 || playingSounds[i].fade <= 0.0f) {
 			playingSounds[i] = playingSounds[playingSoundCount-1];
 			--playingSoundCount;
-		} else {
-			++i;
 		}
-	}*/
+	}
 
-	SoundSample *buffer = malloc(SOUND_SAMPLES_PER_SEC * 4);
-	memset(buffer, 0, SOUND_SAMPLES_PER_SEC * 4);
+#define BUFFER_SIZE 512
+	SoundSample buffer[BUFFER_SIZE];
 
 	// @todo: since we are lerping forward samples you could read 1 sample too many off the end
-	for (int i = 0; i < playingSoundCount; ++i) {
-		int count = paintSize;
-		float sampleRateRatio = (double)playingSounds[i].sound->samplesPerSec / (double)SOUND_SAMPLES_PER_SEC;
-		int samplesToPlay = (playingSounds[i].numSamples - playingSounds[i].cursor) /** sampleRateRatio*/;
-		if ((samplesToPlay*sampleRateRatio) < count) {
-			count = (samplesToPlay*sampleRateRatio);
-		}
-		SoundSample *input = playingSounds[i].sound->data;
-		for (int j = 0; j < count; ++j) {
-			SoundSample sample;
-			// int cursorInt = (int)playingSounds[i].cursor;
-			// float amount0 = 1.0f - (playingSounds[i].cursor - (float)cursorInt);
-			// float amount1 = 1.0f - amount0;
-			float amount0 = 1.0f - playingSounds[i].cursorFract;
-			float amount1 = playingSounds[i].cursorFract;
-			sample.left = (input[playingSounds[i].cursor].left*volume*amount0) + (input[playingSounds[i].cursor+1].left*volume*amount1);
-			sample.right = (input[playingSounds[i].cursor].right*volume*amount0) + (input[playingSounds[i].cursor+1].right*volume*amount1);
-			playingSounds[i].cursorFract += sampleRateRatio;
-
-			{
-				// while (playingSounds[i].cursorFract > 1.0f) {
-				// 	playingSounds[i].cursorFract -= 1.0f;
-				// 	++playingSounds[i].cursor;
-				// }
-				int cursorInt = playingSounds[i].cursorFract;
-				playingSounds[i].cursorFract = playingSounds[i].cursorFract - cursorInt;
-				playingSounds[i].cursor += cursorInt;
+	while (paintSize > 0) {
+		memset(buffer, 0, sizeof(SoundSample)*BUFFER_SIZE);
+		int count = paintSize <= BUFFER_SIZE ? paintSize : BUFFER_SIZE;
+		for (int i = 0; i < playingSoundCount; ++i) {
+			float sampleRateRatio = (double)playingSounds[i].sound->samplesPerSec / (double)SOUND_SAMPLES_PER_SEC;
+			int samplesToPlay = (playingSounds[i].numSamples - playingSounds[i].cursor) /** sampleRateRatio*/;
+			int size = count;
+			if ((samplesToPlay*sampleRateRatio) < size) {
+				size = (samplesToPlay*sampleRateRatio);
 			}
+			SoundSample *input = playingSounds[i].sound->data;
+			for (int j = 0; j < size; ++j) {
+				SoundSample sample;
+				float amount0 = 1.0f - playingSounds[i].cursorFract;
+				float amount1 = playingSounds[i].cursorFract;
+				sample.left = (input[playingSounds[i].cursor].left*volume*amount0) + (input[playingSounds[i].cursor+1].left*volume*amount1);
+				sample.right = (input[playingSounds[i].cursor].right*volume*amount0) + (input[playingSounds[i].cursor+1].right*volume*amount1);
+				sample.left *= playingSounds[i].fade;
+				sample.right *= playingSounds[i].fade;
+				
+				{
+					playingSounds[i].cursorFract += sampleRateRatio;
+					int cursorInt = playingSounds[i].cursorFract;
+					playingSounds[i].cursorFract = playingSounds[i].cursorFract - cursorInt;
+					playingSounds[i].cursor += cursorInt;
+				}
 
-			// playingSounds[i].cursor += sampleRateRatio;
-			buffer[j].left += sample.left;
-			buffer[j].right += sample.right;
-		}
-	}
-	// static float a;
-	// for (int j = 0; j < paintSize; ++j) {
-	// 	a += 0.025f;
-	// 	buffer[j].left += sinf(a) * (0x7FFF/2) * volume;
-	// 	buffer[j].right += sinf(a) * (0x7FFF/2) * volume;
-	// }
-
-	for (int i = 0; i < paintSize; ++i) {
-		visualSamples[visualCursor].left = buffer[i].left;
-		visualSamples[visualCursor].right = buffer[i].right;
-		++visualCursor;
-		visualCursor %= SOUND_SAMPLES_PER_SEC;
-	}
-
-	void *region1;
-	uint region1Size;
-	void *region2;
-	uint region2Size;
-	HRESULT r;
-	if (!paintSize) {
-		fprintf(stderr, "paint size is 0\n");
-		return;
-	}
-	if (r = IDirectSoundBuffer_Lock(secondaryBuffer, (paint%SOUND_SAMPLES_PER_SEC)*4, paintSize*4,
-								&region1, &region1Size, &region2, &region2Size, 0) != DS_OK) {
-		Assert(false);
-		fprintf(stderr, "IDirectSoundBuffer_Lock error\n");
-		return;
-	}
-
-	memcpy(region1, buffer, region1Size);
-	if (region2) {
-		memcpy(region2, buffer + (region1Size/4), region2Size);
-	}
-
-	IDirectSoundBuffer_Unlock(secondaryBuffer, region1, region1Size, region2, region2Size);
-
-
-
-	free(buffer);
-
-	/*if (writeCursor % 4 != 0) {
-		Assert(false);
-	}*/
-
-	/*int chunkSize = (SOUND_SAMPLES_PER_SEC/10)*1;
-	int chunk = (writeCursor/4 / (chunkSize)) + 1;
-
-	chunk %= SOUND_SAMPLES_PER_SEC/chunkSize;
-	int chunklock = chunk*chunkSize*4;
-	int lock = writeCursor;*/
-	/*if (chunk != lastChunkWritten)*/
-	{
-		/*void *region1;
-		uint region1Size;
-		void *region2;
-		uint region2Size;
-		if (IDirectSoundBuffer_Lock(secondaryBuffer, lock, chunkSize*4,
-									&region1, &region1Size, &region2, &region2Size, 0) != DS_OK) {
-			printf("IDirectSoundBuffer_Lock error\n");
-			return;
-		}
-
-		MixSound(region1, lock/4, region1Size/4, debugSoundBuffer+(lock/4));
-		if (region2) {
-			MixSound(region2, 0, region2Size/4, debugSoundBuffer+(lock/4));
-		}*/
-
-#if 0
-		static float amp = 0.0f;
-		int16 *sample = region1;
-		for (int i = 0; i < region1Size/4; ++i) {
-			amp += 0.05f;
-			float s = sinf(amp);
-			sample[0] = (sinf(amp) * 1000/*((float)0x7FFF/20)*/);
-			sample[1] = (sinf(amp) * 1000/*((float)0x7FFF/20)*/);
-			debugSoundBuffer[(lock/4)+i] = (sinf(amp) * 1000.0f);
-			sample += 2;
-		}
-		if (region2) {
-			int16 *sample = region2;
-			for (int i = 0; i < region2Size/4; ++i) {
-				amp += 0.05f;
-				sample[0] = (sinf(amp) * 1000/*((float)0x7FFF/20)*/);
-				sample[1] = (sinf(amp) * 1000/*((float)0x7FFF/20)*/);
-				// debugSoundBuffer[(lock/4)+i] = sinf(amp) * 100;
-				sample += 2;
+				buffer[j].left += sample.left;
+				buffer[j].right += sample.right;
 			}
 		}
-#endif
+		WriteToSoundDevice(buffer, paint, count);
+		paintSize -= count;
+		paint += count;
 
-		/*IDirectSoundBuffer_Unlock(secondaryBuffer, region1, region1Size, region2, region2Size);
-		lastChunkWritten = chunk;*/
+		for (int i = 0; i < count; ++i) {
+			visualSamples[visualCursor].left = buffer[i].left;
+			visualSamples[visualCursor].right = buffer[i].right;
+			++visualCursor;
+			visualCursor %= SOUND_SAMPLES_PER_SEC;
+		}
 	}
 
 	paintedEnd = end;
