@@ -36,58 +36,18 @@
 	"buffers":
 	[
 		{
-			"file": "main.cc",
+			"file": "main.c",
 			"settings":
 			{
-				"buffer_size": 1267,
+				"buffer_size": 2472,
 				"line_ending": "Unix"
 			}
 		},
 		{
-			"file": "win32.cc",
+			"file": "software_renderer.c",
 			"settings":
 			{
-				"buffer_size": 6883,
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "linux.cc",
-			"settings":
-			{
-				"buffer_size": 4866,
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "build.sh",
-			"settings":
-			{
-				"buffer_size": 69,
-				"line_ending": "Unix",
-				"name": "build"
-			}
-		},
-		{
-			"file": "software_renderer.cc",
-			"settings":
-			{
-				"buffer_size": 17225,
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "/home/matt/work/tests/c/c.sublime-project",
-			"settings":
-			{
-				"buffer_size": 45,
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"settings":
-			{
-				"buffer_size": 0,
+				"buffer_size": 18313,
 				"line_ending": "Unix"
 			}
 		},
@@ -95,8 +55,56 @@
 			"file": "build.bat",
 			"settings":
 			{
-				"buffer_size": 131,
+				"buffer_size": 178,
 				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "win32.c",
+			"settings":
+			{
+				"buffer_size": 23629,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "/C/Program Files (x86)/Microsoft Visual Studio 12.0/VC/include/math.h",
+			"settings":
+			{
+				"buffer_size": 43251,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "platform.c",
+			"settings":
+			{
+				"buffer_size": 439,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "linux.c",
+			"settings":
+			{
+				"buffer_size": 6814,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "build.sh",
+			"settings":
+			{
+				"buffer_size": 85,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "build/stdout.txt",
+			"settings":
+			{
+				"buffer_size": 92050,
+				"line_ending": "Windows"
 			}
 		}
 	],
@@ -157,12 +165,17 @@
 	},
 	"expanded_folders":
 	[
-		"/home/matt/work/SoftwareRenderer"
+		"/W/SoftwareRenderer"
 	],
 	"file_history":
 	[
-		"/home/matt/.config/sublime-text-3/Packages/User/C.sublime-build",
+		"/W/SoftwareRenderer/linux.cc",
+		"/W/SoftwareRenderer/build.bat",
+		"/W/SoftwareRenderer/win32.cc",
 		"/C/Users/Matt/AppData/Roaming/Sublime Text 3/Packages/User/SoftwareRenderer.sublime-build",
+		"/W/SoftwareRenderer/software_renderer.cc",
+		"/W/SoftwareRenderer/platform.cc",
+		"/W/SoftwareRenderer/main.cc",
 		"/C/Users/Matt/AppData/Roaming/Sublime Text 3/Packages/User/SpaceGame.sublime-build",
 		"/W/lib/gj/gj_lib.h",
 		"/C/Users/Matt/Desktop/WinVICE-2.4-x64/README",
@@ -265,7 +278,7 @@
 	],
 	"find":
 	{
-		"height": 24.0
+		"height": 34.0
 	},
 	"find_in_files":
 	{
@@ -280,6 +293,18 @@
 		"case_sensitive": false,
 		"find_history":
 		[
+			"sinf",
+			"_In_",
+			"videomemory",
+			"m",
+			"mat2.m",
+			"mat1.m",
+			"mat2.m",
+			"mat1",
+			"alloca",
+			"RotateVector",
+			"double",
+			"GetPixelCoords",
 			"QueueEntityRemoval",
 			"entityRemovalQueue",
 			"GetEntityFromHash",
@@ -395,19 +420,7 @@
 			");\n",
 			"CreatePerlinNoise",
 			"PerlinNoiseState",
-			"Running",
-			"RandomIntSlow",
-			"update",
-			"updateview",
-			"getTextureFrameBufferError",
-			");\n",
-			"worldProjectionMatrix",
-			"SetProjectionMatrix",
-			"pushbitmap",
-			"RENDER_COMMAND_MESH",
-			"GetShaderError",
-			"getshadererror",
-			"gamememory"
+			"Running"
 		],
 		"highlight": true,
 		"in_selection": false,
@@ -425,30 +438,181 @@
 	"groups":
 	[
 		{
-			"selected": 6,
+			"selected": 0,
 			"sheets":
 			[
 				{
 					"buffer": 0,
-					"file": "main.cc",
+					"file": "main.c",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 1267,
+						"buffer_size": 2472,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								0,
-								0
+								1159,
+								1159
 							]
 						],
 						"settings":
 						{
 							"syntax": "Packages/C++/C++.tmLanguage",
 							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 288.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "software_renderer.c",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 18313,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								16351,
+								16351
+							]
+						],
+						"settings":
+						{
+							"history_list_is_closing": true,
+							"syntax": "Packages/C++/C++.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 3372.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 3,
+					"type": "text"
+				}
+			]
+		},
+		{
+			"selected": 1,
+			"sheets":
+			[
+				{
+					"buffer": 2,
+					"file": "build.bat",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 178,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								178,
+								178
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Batch File/Batch File.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": -0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 4,
+					"type": "text"
+				},
+				{
+					"buffer": 3,
+					"file": "win32.c",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 23629,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								19513,
+								19513
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/C++/C++.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 8437.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 4,
+					"file": "/C/Program Files (x86)/Microsoft Visual Studio 12.0/VC/include/math.h",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 43251,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								22873,
+								22877
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/C++/C++.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 11161.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 7,
+					"type": "text"
+				},
+				{
+					"buffer": 5,
+					"file": "platform.c",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 439,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								303,
+								303
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/C++/C++.tmLanguage"
 						},
 						"translation.x": 0.0,
 						"translation.y": 0.0,
@@ -458,20 +622,20 @@
 					"type": "text"
 				},
 				{
-					"buffer": 1,
-					"file": "win32.cc",
+					"buffer": 6,
+					"file": "linux.c",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 6883,
+						"buffer_size": 6814,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								116,
-								116
+								3249,
+								3249
 							]
 						],
 						"settings":
@@ -480,142 +644,55 @@
 							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
-						"translation.y": 0.0,
+						"translation.y": 2112.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 7,
+					"stack_index": 8,
 					"type": "text"
 				},
 				{
-					"buffer": 2,
-					"file": "linux.cc",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 4866,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								1146,
-								1146
-							]
-						],
-						"settings":
-						{
-							"auto_name": "",
-							"syntax": "Packages/C++/C++.tmLanguage",
-							"translate_tabs_to_spaces": false
-						},
-						"translation.x": 0.0,
-						"translation.y": 1287.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 3,
-					"type": "text"
-				},
-				{
-					"buffer": 3,
+					"buffer": 7,
 					"file": "build.sh",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 69,
+						"buffer_size": 85,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								0,
-								0
+								74,
+								74
 							]
 						],
 						"settings":
 						{
-							"auto_name": "build",
 							"syntax": "Packages/ShellScript/Shell-Unix-Generic.tmLanguage"
 						},
 						"translation.x": 0.0,
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 4,
+					"stack_index": 6,
 					"type": "text"
 				},
 				{
-					"buffer": 4,
-					"file": "software_renderer.cc",
-					"semi_transient": true,
-					"settings":
-					{
-						"buffer_size": 17225,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								0,
-								0
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/C++/C++.tmLanguage",
-							"translate_tabs_to_spaces": false
-						},
-						"translation.x": 0.0,
-						"translation.y": 8522.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 2,
-					"type": "text"
-				},
-				{
-					"buffer": 5,
-					"file": "/home/matt/work/tests/c/c.sublime-project",
+					"buffer": 8,
+					"file": "build/stdout.txt",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 45,
+						"buffer_size": 92050,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								0,
-								0
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/JavaScript/JSON.sublime-syntax"
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 1,
-					"type": "text"
-				},
-				{
-					"buffer": 6,
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 0,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								0,
-								0
+								92026,
+								92026
 							]
 						],
 						"settings":
@@ -623,38 +700,10 @@
 							"syntax": "Packages/Text/Plain text.tmLanguage"
 						},
 						"translation.x": 0.0,
-						"translation.y": 0.0,
+						"translation.y": 44186.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 0,
-					"type": "text"
-				},
-				{
-					"buffer": 7,
-					"file": "build.bat",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 131,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								131,
-								131
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/Batch File/Batch File.tmLanguage"
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 6,
+					"stack_index": 2,
 					"type": "text"
 				}
 			]
@@ -677,11 +726,18 @@
 				0,
 				1,
 				1
+			],
+			[
+				1,
+				0,
+				2,
+				1
 			]
 		],
 		"cols":
 		[
 			0.0,
+			0.5,
 			1.0
 		],
 		"rows":
@@ -693,13 +749,13 @@
 	"menu_visible": false,
 	"output.exec":
 	{
-		"height": 222.0
+		"height": 205.0
 	},
 	"output.find_results":
 	{
 		"height": 0.0
 	},
-	"pinned_build_system": "Packages/User/C.sublime-build",
+	"pinned_build_system": "Packages/User/SpaceGame.sublime-build",
 	"project": "SoftwareRenderer.sublime-project",
 	"replace":
 	{
@@ -713,20 +769,68 @@
 		"selected_items":
 		[
 			[
-				"",
-				"linux.cc"
+				"main",
+				"main.c"
+			],
+			[
+				"soft",
+				"software_renderer.c"
+			],
+			[
+				"software",
+				"software_renderer.c"
+			],
+			[
+				"std",
+				"build\\stdout.txt"
+			],
+			[
+				"sf",
+				"software_renderer.c"
+			],
+			[
+				"win32",
+				"win32.c"
+			],
+			[
+				"platform",
+				"platform.c"
+			],
+			[
+				"linux",
+				"linux.c"
 			],
 			[
 				"build",
 				"build.sh"
 			],
 			[
-				"linux",
+				"bui",
+				"build.bat"
+			],
+			[
+				"linu",
 				"linux.cc"
 			],
 			[
-				"main",
-				"main.cc"
+				"wi32",
+				"win32.cc"
+			],
+			[
+				"softr",
+				"software_renderer.cc"
+			],
+			[
+				"",
+				"software_renderer.cc"
+			],
+			[
+				"sof",
+				"software_renderer.cc"
+			],
+			[
+				"sofrt",
+				"software_renderer.cc"
 			],
 			[
 				"todo",
@@ -865,14 +969,6 @@
 				"code\\bst.cc"
 			],
 			[
-				"win32",
-				"code\\win32.cc"
-			],
-			[
-				"platform",
-				"code\\platform.h"
-			],
-			[
 				"de",
 				"code\\debug.cc"
 			],
@@ -923,10 +1019,6 @@
 			[
 				"deug",
 				"code\\debug.cc"
-			],
-			[
-				"bui",
-				"code\\build.bat"
 			],
 			[
 				"ga",
@@ -1165,10 +1257,6 @@
 				"entity_sim.cc"
 			],
 			[
-				"wi32",
-				"win32.cc"
-			],
-			[
 				"platfrm",
 				"platform.h"
 			],
@@ -1191,38 +1279,6 @@
 			[
 				"sim",
 				"code\\entity_sim.cc"
-			],
-			[
-				"lat",
-				"code\\platform.h"
-			],
-			[
-				"latfor",
-				"code\\platform.cc"
-			],
-			[
-				"win",
-				"code\\win32.cc"
-			],
-			[
-				"model_pro",
-				"code\\asset_packer\\model_processor.h"
-			],
-			[
-				"assets",
-				"code\\asset_shared.h"
-			],
-			[
-				"obj",
-				"W:\\SpaceGame\\build\\assets\\models\\Confederacy\\confederacy_fighter.obj"
-			],
-			[
-				"ass",
-				"code\\asset_shared.h"
-			],
-			[
-				"oepngl",
-				"code\\render_opengl.cc"
 			]
 		],
 		"width": 0.0
@@ -1251,8 +1307,8 @@
 	},
 	"show_minimap": true,
 	"show_open_files": false,
-	"show_tabs": false,
-	"side_bar_visible": true,
+	"show_tabs": true,
+	"side_bar_visible": false,
 	"side_bar_width": 259.0,
 	"status_bar_visible": true,
 	"template_settings":

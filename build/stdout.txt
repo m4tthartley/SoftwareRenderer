@@ -2789,3 +2789,4 @@ Initialized DirectSound
 Initialized DirectSound
 Initialized DirectSound
 Initialized DirectSound
+Initialized DirectSound

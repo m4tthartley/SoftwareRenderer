@@ -1,6 +1,4 @@
 
-// Software renderer
-
 #include <windows.h>
 #include <GL/gl.h>
 #include <dsound.h>
@@ -64,11 +62,7 @@ typedef enum {
 	KEYBOARD_ESCAPE = VK_ESCAPE,
 } KeyID;
 
-/*#define WINDOW_WIDTH 1920
-#define WINDOW_HEIGHT 1080*/
-
-// bool globalRunning = true;
-LARGE_INTEGER globalPerformanceFrequency = {0};
+LARGE_INTEGER _globalPerformanceFrequency = {0};
 
 typedef struct {
 	HWND _window;
@@ -83,20 +77,28 @@ typedef struct {
 	struct {
 		bool keys[256];
 		bool keysLast[256];
+		struct {
+			int x;
+			int y;
+		} mouse;
 	} input;
+	bool soundDisabled;
 } OSState;
 
 OSState *_globalState;
 
+#define PrintOut(...) fprintf(stdout, __VA_ARGS__);
+#define PrintErr(...) fprintf(stderr, __VA_ARGS__);
+
 int main (int argc, char**argv);
 
 double GetSeconds () {
-	if (!globalPerformanceFrequency.QuadPart) {
-		QueryPerformanceFrequency(&globalPerformanceFrequency);
+	if (!_globalPerformanceFrequency.QuadPart) {
+		QueryPerformanceFrequency(&_globalPerformanceFrequency);
 	}
 	LARGE_INTEGER time;
 	QueryPerformanceCounter(&time);
-	double seconds = (double)time.QuadPart / (double)globalPerformanceFrequency.QuadPart;
+	double seconds = (double)time.QuadPart / (double)_globalPerformanceFrequency.QuadPart;
 	return seconds;
 }
 
@@ -107,10 +109,10 @@ int64 GetTime () {
 }
 
 float ConvertToSeconds (int64 time) {
-	if (!globalPerformanceFrequency.QuadPart) {
-		QueryPerformanceFrequency(&globalPerformanceFrequency);
+	if (!_globalPerformanceFrequency.QuadPart) {
+		QueryPerformanceFrequency(&_globalPerformanceFrequency);
 	}
-	float seconds = (double)time / (double)globalPerformanceFrequency.QuadPart;
+	float seconds = (double)time / (double)_globalPerformanceFrequency.QuadPart;
 	return seconds;
 }
 
@@ -139,7 +141,6 @@ typedef struct {
 	int jobCount;
 } WorkerThreadPool;
 
-// HANDLE semaphoreHandle;
 struct {
 	int id;
 	int value;
@@ -186,10 +187,45 @@ void AddResult (void *udata) {
 	++num;
 }
 
+void WorkerThreadTest () {
+	WorkerThreadPool workerThreads;
+	CreateWorkerThreadPool(&workerThreads);
+	/*semaphoreHandle = CreateSemaphore(0, 0, 1024, NULL);
+	for (int i = 0; i < 4; ++i) {
+		DWORD id;
+		CreateThread(0, 0, WorkerThreadProc, NULL, 0, &id);
+	}
+
+	ReleaseSemaphore(semaphoreHandle, 1, NULL);
+	ReleaseSemaphore(semaphoreHandle, 1, NULL);*/
+
+	AddWorkerThreadJob(&workerThreads, AddResult, NULL);
+	AddWorkerThreadJob(&workerThreads, AddResult, NULL);
+	AddWorkerThreadJob(&workerThreads, AddResult, NULL);
+	AddWorkerThreadJob(&workerThreads, AddResult, NULL);
+	AddWorkerThreadJob(&workerThreads, AddResult, NULL);
+	AddWorkerThreadJob(&workerThreads, AddResult, NULL);
+	AddWorkerThreadJob(&workerThreads, AddResult, NULL);
+	AddWorkerThreadJob(&workerThreads, AddResult, NULL);
+	Sleep(1000);
+
+	for (int i = 0; i < resultCount; ++i) {
+		char str[64];
+		sprintf(str, "value %i, thread %i\n", results[i].value, results[i].id);
+		OutputDebugString(str);
+	}
+}
+
 void PollEvents (OSState *os) {
 	// memset(&os->input.
 	//os->input.keysLast[Message.wParam] = os->input.keys[Message.wParam];
 	memcpy(os->input.keysLast, os->input.keys, sizeof(os->input.keys));
+
+	POINT mouse;
+	GetCursorPos(&mouse);
+	ScreenToClient(os->_window, &mouse);
+	os->input.mouse.x = mouse.x;
+	os->input.mouse.y = mouse.y;
 
 	MSG Message;
 	while (PeekMessage(&Message, 0, 0, 0, PM_REMOVE)) {
@@ -233,37 +269,8 @@ bool KeyPressed (OSState *os, KeyID key) {
 	return os->input.keys[key] && !os->input.keysLast[key];
 }
 
-void StartSoftwareGraphics (OSState *os, int windowWidth, int windowHeight, int backBufferWidth, int backBufferHeight) {
-	WorkerThreadPool workerThreads;
-	CreateWorkerThreadPool(&workerThreads);
-	/*semaphoreHandle = CreateSemaphore(0, 0, 1024, NULL);
-	for (int i = 0; i < 4; ++i) {
-		DWORD id;
-		CreateThread(0, 0, WorkerThreadProc, NULL, 0, &id);
-	}
-
-	ReleaseSemaphore(semaphoreHandle, 1, NULL);
-	ReleaseSemaphore(semaphoreHandle, 1, NULL);*/
-
-	AddWorkerThreadJob(&workerThreads, AddResult, NULL);
-	AddWorkerThreadJob(&workerThreads, AddResult, NULL);
-	AddWorkerThreadJob(&workerThreads, AddResult, NULL);
-	AddWorkerThreadJob(&workerThreads, AddResult, NULL);
-	AddWorkerThreadJob(&workerThreads, AddResult, NULL);
-	AddWorkerThreadJob(&workerThreads, AddResult, NULL);
-	AddWorkerThreadJob(&workerThreads, AddResult, NULL);
-	AddWorkerThreadJob(&workerThreads, AddResult, NULL);
-	Sleep(1000);
-
-	for (int i = 0; i < resultCount; ++i) {
-		char str[64];
-		sprintf(str, "value %i, thread %i\n", results[i].value, results[i].id);
-		OutputDebugString(str);
-	}
-
+void InitSoftwareVideo (OSState *os, int windowWidth, int windowHeight, int backBufferWidth, int backBufferHeight) {
 	_globalState = os;
-
-	// QueryPerformanceFrequency(&globalPerformanceFrequency);
 
 	WNDCLASS windowClass = {0};
 	windowClass.style = CS_OWNDC|CS_HREDRAW|CS_VREDRAW;
@@ -303,72 +310,23 @@ void StartSoftwareGraphics (OSState *os, int windowWidth, int windowHeight, int 
 			os->bitmapInfo.bmiHeader.biWidth = os->backBufferWidth;
 			os->bitmapInfo.bmiHeader.biHeight = os->backBufferHeight;
 			os->bitmapInfo.bmiHeader.biPlanes = 1;
-			os->bitmapInfo.bmiHeader.biBitCount = 32; // note: DWORD aligned
+			os->bitmapInfo.bmiHeader.biBitCount = 32;
 			os->bitmapInfo.bmiHeader.biCompression = BI_RGB;
 
 			HBITMAP hBitmap = CreateDIBSection (os->hdc, &os->bitmapInfo, DIB_RGB_COLORS, &os->videoMemory, 0, 0);
-
-#if 0
-			POINT mouse;
-			GetCursorPos(&mouse);
-			ScreenToClient(window, &mouse);
-			mouse.x /= (WINDOW_WIDTH/state.backBufferSize.x);
-			mouse.y /= (WINDOW_HEIGHT/state.backBufferSize.y);
-			char str[64];
-			sprintf(str, "mouse %i %i \n", mouse.x, mouse.y);
-			OutputDebugString(str);
-#endif
-
-#if 0
-			while (globalRunning) {
-				state.input = {};
-
-
-
-				
-
-				Update(&state);
-
-				/*unsigned char red[4] = {255, 0, 0, 0};
-				unsigned int *pixels = (unsigned int*)videoMemory;
-				for (int i = 0; i < 640*360; ++i) {
-					unsigned char r = rand();
-					unsigned char g = rand();
-					unsigned char b = rand();
-					pixels[i] = (0 << 24) | (r << 16) | (g << 8) | (b);
-					// pixels[i] = *(unsigned int *)red;
-				}*/
-
-				// pixel[0] = red[0];
-				// pixel[1] = red[1];
-				// pixel[2] = red[2];
-				// pixel[3] = red[3];
-				// pixel[4] = red[4];
-				// pixel[5] = red[5];
-				// pixel[6] = red[6];
-				// pixel[7] = red[7];
-
-				PAINTSTRUCT paint;
-				// HDC hdc = BeginPaint(window, &paint);
-
-				unsigned int *pixels = (unsigned int*)videoMemory;
-				for (int i = 0; i < state.backBufferSize.x*state.backBufferSize.y; ++i) {
-					unsigned char a = state.video[i].a*255;
-					unsigned char r = state.video[i].r*255;
-					unsigned char g = state.video[i].g*255;
-					unsigned char b = state.video[i].b*255;
-					pixels[i] = (a << 24) | (r << 16) | (g << 8) | (b);
-				}
-				StretchDIBits(hdc, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 0, 0, state.backBufferSize.x, state.backBufferSize.y, videoMemory, &bitmapInfo, DIB_RGB_COLORS, SRCCOPY);
-				// BitBlt(hdc, 0, 0, 300, 300, hdc, 0, 0, SRCCOPY);
-
-				// EndPaint(window, &paint);
-
-			}
-#endif
-
+		} else {
+			PrintErr("Error while creating window\n");
+			goto error;
 		}
+	} else {
+		PrintErr("Error while registering window class\n");
+		goto error;
 	}
+
+	return;
+error:
+	MessageBox(os->_window, "There was an error initializing software video", NULL, MB_OK);
+	exit(1);
 }
 
 void InitOpenglVideo (OSState *os, int windowWidth, int windowHeight) {
@@ -419,32 +377,32 @@ void InitOpenglVideo (OSState *os, int windowWidth, int windowHeight) {
 
 				int suggestedIndex = ChoosePixelFormat(os->hdc, &pixelFormat);
 				if (!suggestedIndex) {
-					fprintf(stderr, "ChoosePixelFormat failed\n");
+					PrintErr("ChoosePixelFormat failed\n");
 					goto error;
 				}
 				PIXELFORMATDESCRIPTOR suggested;
 				DescribePixelFormat(os->hdc, suggestedIndex, sizeof(PIXELFORMATDESCRIPTOR), &suggested);
 				if (!SetPixelFormat(os->hdc, suggestedIndex, &suggested)) {
-					fprintf(stderr, "SetPixelFormat failed\n");
+					PrintErr("SetPixelFormat failed\n");
 					goto error;
 				}
 
 				HGLRC glContext = wglCreateContext(os->hdc);
 				if (!glContext) {
-					fprintf(stderr, "wglCreateContext failed\n");
+					PrintErr("wglCreateContext failed\n");
 					goto error;
 				}
 				if (!wglMakeCurrent(os->hdc, glContext)) {
-					fprintf(stderr, "wglMakeCurrent failed\n");
+					PrintErr("wglMakeCurrent failed\n");
 					goto error;
 				}
 			}
 		} else {
-			fprintf(stderr, "Error while creating window\n");
+			PrintErr("Error while creating window\n");
 			goto error;
 		}
 	} else {
-		fprintf(stderr, "Error while registering window class\n");
+		PrintErr("Error while registering window class\n");
 		goto error;
 	}
 
@@ -587,27 +545,37 @@ typedef HRESULT WINAPI DirectSoundCreateProc (LPCGUID pcGuidDevice, LPDIRECTSOUN
 #define SOUND_SAMPLES_PER_SEC (48000/1)
 #define SOUND_MIX_FORWARD 0.05f
 
+/* @todo:
+		Need to lock - access to playingSounds
+					   access to pause
+		Remove critical section from around mixing loop
+*/
+
 LPDIRECTSOUND dsound;
 LPDIRECTSOUNDBUFFER primaryBuffer;
 LPDIRECTSOUNDBUFFER secondaryBuffer;
+CRITICAL_SECTION playingSoundsLock;
 void InitSound (OSState *os) {
+	InitializeCriticalSectionAndSpinCount(&playingSoundsLock, 1024);
+
 	HMODULE dsoundLib = LoadLibraryA("dsound.dll");
 	if (!dsoundLib) {
-		printf("Error loading dsound.dll\n");
+		PrintErr("Error loading dsound.dll\n");
 		goto error;
 	}
-		// HRESULT WINAPI (*)(LPCGUID pcGuidDevice, LPDIRECTSOUND *ppDS, LPUNKNOWN pUnkOuter)
-		// HRESULT WINAPI (*DirectSoundCreate)(LPCGUID pcGuidDevice, LPDIRECTSOUND *ppDS, LPUNKNOWN pUnkOuter)
-		// 	= GetProcAddress(dsoundLib, "DirectSoundCreate");
-		// DirectSoundCreateProc DirectSoundCreate = GetProcAddress(dsoundLib, "DirectSoundCreate");
+
+	// HRESULT WINAPI (*)(LPCGUID pcGuidDevice, LPDIRECTSOUND *ppDS, LPUNKNOWN pUnkOuter)
+	// HRESULT WINAPI (*DirectSoundCreate)(LPCGUID pcGuidDevice, LPDIRECTSOUND *ppDS, LPUNKNOWN pUnkOuter)
+	// 	= GetProcAddress(dsoundLib, "DirectSoundCreate");
+	// DirectSoundCreateProc DirectSoundCreate = GetProcAddress(dsoundLib, "DirectSoundCreate");
 	DirectSoundCreateProc *DirectSoundCreate = (DirectSoundCreateProc*)GetProcAddress(dsoundLib, "DirectSoundCreate");
 	if (!DirectSoundCreate) {
-		printf("Error loading DirectSoundCreate proc\n");
+		PrintErr("Error loading DirectSoundCreate proc\n");
 		goto error;
 	}
 
 	if (!SUCCEEDED(DirectSoundCreate(0, &dsound, 0))) {
-		printf("DirectSoundCreate error\n");
+		PrintErr("DirectSoundCreate error\n");
 		goto error;
 	}
 
@@ -620,7 +588,7 @@ void InitSound (OSState *os) {
 	wave.nAvgBytesPerSec = SOUND_SAMPLES_PER_SEC * 4;
 
 	if (!SUCCEEDED(IDirectSound_SetCooperativeLevel(dsound, os->_window, DSSCL_PRIORITY))) {
-		printf("IDirectSound_SetCooperativeLevel error\n");
+		PrintErr("IDirectSound_SetCooperativeLevel error\n");
 		goto error;
 	}
 
@@ -628,12 +596,12 @@ void InitSound (OSState *os) {
 	desc.dwSize = sizeof(DSBUFFERDESC);
 	desc.dwFlags = DSBCAPS_PRIMARYBUFFER;
 	if (!SUCCEEDED(IDirectSound_CreateSoundBuffer(dsound, &desc, &primaryBuffer, 0))) {
-		printf("IDirectSound_CreateSoundBuffer error\n");
+		PrintErr("IDirectSound_CreateSoundBuffer error\n");
 		goto error;
 	}
 
 	if (!SUCCEEDED(IDirectSoundBuffer_SetFormat(primaryBuffer, &wave))) {
-		printf("IDirectSoundBuffer_SetFormat error\n");
+		PrintErr("IDirectSoundBuffer_SetFormat error\n");
 		goto error;
 	}
 
@@ -643,18 +611,19 @@ void InitSound (OSState *os) {
 	desc2.dwBufferBytes = SOUND_SAMPLES_PER_SEC * 4;
 	desc2.lpwfxFormat = &wave;
 	if (!SUCCEEDED(IDirectSound_CreateSoundBuffer(dsound, &desc2, &secondaryBuffer, 0))) {
-		printf("IDirectSound_CreateSoundBuffer error\n");
+		PrintErr("IDirectSound_CreateSoundBuffer error\n");
 		goto error;
 	}
 
 	IDirectSoundBuffer_SetCurrentPosition(secondaryBuffer, 0);
 	IDirectSoundBuffer_Play(secondaryBuffer, 0, 0, DSBPLAY_LOOPING);
 
-	printf("Initialized DirectSound\n");
 	return;
 
 error:
-	printf("Failed to initialize DirectSound\n");
+	PrintErr("Failed to initialize DirectSound\n");
+	MessageBox(os->_window, "There was an error initializing audio, continuing without sound", NULL, MB_OK);
+	os->soundDisabled = true;
 }
 
 int lastChunkWritten = 0;
@@ -671,7 +640,6 @@ typedef struct {
 	int numSamples;
 	int cursor;
 	float cursorFract;
-	// int lastWriteCursor;
 	float fadeSpeed;
 	float fade;
 } PlayingSound;
@@ -684,6 +652,7 @@ PlayingSound playingSounds[64];
 int playingSoundCount = 0;
 
 void SoundPlay (Sound *sound, int flags) {
+	EnterCriticalSection(&playingSoundsLock);
 	if (sound->channels == 2 && sound->bitsPerSample == 16) {
 		playingSounds[playingSoundCount].sound = sound;
 		playingSounds[playingSoundCount].numSamples = sound->size/4;
@@ -696,14 +665,17 @@ void SoundPlay (Sound *sound, int flags) {
 		}
 		++playingSoundCount;
 	} else {
-		fprintf(stderr, "Currently only 2 channel 16bit audio is supported!\n");
+		PrintErr("Currently only 2 channel 16bit audio is supported!\n");
 	}
+	LeaveCriticalSection(&playingSoundsLock);
 }
 
 void FadeOutSounds () {
+	EnterCriticalSection(&playingSoundsLock);
 	for (int i = 0; i < playingSoundCount; ++i) {
 		playingSounds[i].fadeSpeed = -0.005f;
 	}
+	LeaveCriticalSection(&playingSoundsLock);
 }
 
 int GetSoundDeviceWriteCursor () {
@@ -711,7 +683,7 @@ int GetSoundDeviceWriteCursor () {
 	int writeCursor;
 	HRESULT result;
 	if (result = IDirectSoundBuffer_GetCurrentPosition(secondaryBuffer, &playCursor, &writeCursor) != DS_OK) {
-		printf("IDirectSoundBuffer_GetCurrentPosition error\n");
+		PrintErr("IDirectSoundBuffer_GetCurrentPosition error\n");
 		// @todo handle failure
 		return 0; // zero?
 	}
@@ -726,13 +698,12 @@ void WriteToSoundDevice (void *buffer, int pos, int size) {
 	uint region2Size;
 	HRESULT r;
 	if (!size) {
-		fprintf(stderr, "paint size is 0\n");
+		PrintErr("paint size is 0\n");
 		return;
 	}
 	if (r = IDirectSoundBuffer_Lock(secondaryBuffer, (pos%SOUND_SAMPLES_PER_SEC)*4, size*4,
 								&region1, &region1Size, &region2, &region2Size, 0) != DS_OK) {
-		Assert(false);
-		fprintf(stderr, "IDirectSoundBuffer_Lock error\n");
+		PrintErr("IDirectSoundBuffer_Lock error\n");
 		return;
 	}
 
@@ -744,16 +715,48 @@ void WriteToSoundDevice (void *buffer, int pos, int size) {
 	IDirectSoundBuffer_Unlock(secondaryBuffer, region1, region1Size, region2, region2Size);
 }
 
-int16 debugSoundBuffer[SOUND_SAMPLES_PER_SEC];
+_inline long AtomicRead (volatile long *value) {
+	return InterlockedExchangeAdd(value, 0);
+}
+
+_inline long AtomicCompareExchange (volatile long *value, long compare, long exchange) {
+	return InterlockedCompareExchange(value, exchange, compare);
+}
+
+_inline long AtomicExchange (volatile long *value, long exchange) {
+	return InterlockedExchange(value, exchange);
+}
+
+bool soundPaused = false;
+void PauseSound () {
+	// soundPaused = true;
+	AtomicExchange((long*)&soundPaused, true);
+}
+
+void UnpauseSound () {
+	// soundPaused = false;
+	AtomicExchange((long*)&soundPaused, false);
+}
+
+void TogglePauseSound () {
+	// if (!soundPaused) soundPaused = true;
+	// else soundPaused = false;
+	if (AtomicCompareExchange((long*)&soundPaused, false, true) != false) {
+		AtomicExchange((long*)&soundPaused, false);
+	}
+}
+
+// int16 debugSoundBuffer[SOUND_SAMPLES_PER_SEC];
 int buffers = 0;
 int oldWritePos = 0;
 int paintedEnd = 0;
-// SoundSample *buffer = NULL;
 float volume = 0.25f;
 int64 oldTime = 0;
 SoundSample visualSamples[SOUND_SAMPLES_PER_SEC];
 int visualCursor = 0;
 void UpdateSound (OSState *os) {
+	if (os->soundDisabled) return;
+
 	int writePos = GetSoundDeviceWriteCursor();
 
 	if (writePos < oldWritePos) {
@@ -782,6 +785,7 @@ void UpdateSound (OSState *os) {
 	int paintSize = end - paint;
 	if (paintSize < 0) paintSize = 0;
 
+	EnterCriticalSection(&playingSoundsLock);
 	for (int i = playingSoundCount-1; i >= 0; --i) {
 		playingSounds[i].fade += playingSounds[i].fadeSpeed;
 		if (playingSounds[i].fade > 1.0f) {
@@ -794,7 +798,7 @@ void UpdateSound (OSState *os) {
 			--playingSoundCount;
 		}
 	}
-
+	
 #define BUFFER_SIZE 512
 	SoundSample buffer[BUFFER_SIZE];
 
@@ -802,45 +806,52 @@ void UpdateSound (OSState *os) {
 	while (paintSize > 0) {
 		memset(buffer, 0, sizeof(SoundSample)*BUFFER_SIZE);
 		int count = paintSize <= BUFFER_SIZE ? paintSize : BUFFER_SIZE;
-		for (int i = 0; i < playingSoundCount; ++i) {
-			float sampleRateRatio = (double)playingSounds[i].sound->samplesPerSec / (double)SOUND_SAMPLES_PER_SEC;
-			int samplesToPlay = (playingSounds[i].numSamples - playingSounds[i].cursor) /** sampleRateRatio*/;
-			int size = count;
-			if ((samplesToPlay*sampleRateRatio) < size) {
-				size = (samplesToPlay*sampleRateRatio);
-			}
-			SoundSample *input = playingSounds[i].sound->data;
-			for (int j = 0; j < size; ++j) {
-				SoundSample sample;
-				float amount0 = 1.0f - playingSounds[i].cursorFract;
-				float amount1 = playingSounds[i].cursorFract;
-				sample.left = (input[playingSounds[i].cursor].left*volume*amount0) + (input[playingSounds[i].cursor+1].left*volume*amount1);
-				sample.right = (input[playingSounds[i].cursor].right*volume*amount0) + (input[playingSounds[i].cursor+1].right*volume*amount1);
-				sample.left *= playingSounds[i].fade;
-				sample.right *= playingSounds[i].fade;
-				
-				{
-					playingSounds[i].cursorFract += sampleRateRatio;
-					int cursorInt = playingSounds[i].cursorFract;
-					playingSounds[i].cursorFract = playingSounds[i].cursorFract - cursorInt;
-					playingSounds[i].cursor += cursorInt;
+		bool paused = AtomicRead((long*)&soundPaused);
+		if (!paused) {
+			int soundCount = AtomicRead(&playingSoundCount);
+			for (int i = 0; i < soundCount; ++i) {
+				float sampleRateRatio = (double)playingSounds[i].sound->samplesPerSec / (double)SOUND_SAMPLES_PER_SEC;
+				int samplesToPlay = (playingSounds[i].numSamples - playingSounds[i].cursor) /** sampleRateRatio*/;
+				int size = count;
+				if ((samplesToPlay*sampleRateRatio) < size) {
+					size = (samplesToPlay*sampleRateRatio);
 				}
+				SoundSample *input = playingSounds[i].sound->data;
+				for (int j = 0; j < size; ++j) {
+					SoundSample sample;
+					float amount0 = 1.0f - playingSounds[i].cursorFract;
+					float amount1 = playingSounds[i].cursorFract;
+					sample.left = (input[playingSounds[i].cursor].left*volume*amount0) + (input[playingSounds[i].cursor+1].left*volume*amount1);
+					sample.right = (input[playingSounds[i].cursor].right*volume*amount0) + (input[playingSounds[i].cursor+1].right*volume*amount1);
+					sample.left *= playingSounds[i].fade;
+					sample.right *= playingSounds[i].fade;
+					
+					{
+						playingSounds[i].cursorFract += sampleRateRatio;
+						int cursorInt = playingSounds[i].cursorFract;
+						playingSounds[i].cursorFract = playingSounds[i].cursorFract - cursorInt;
+						playingSounds[i].cursor += cursorInt;
+					}
 
-				buffer[j].left += sample.left;
-				buffer[j].right += sample.right;
+					buffer[j].left += sample.left;
+					buffer[j].right += sample.right;
+				}
 			}
 		}
 		WriteToSoundDevice(buffer, paint, count);
 		paintSize -= count;
 		paint += count;
 
-		for (int i = 0; i < count; ++i) {
-			visualSamples[visualCursor].left = buffer[i].left;
-			visualSamples[visualCursor].right = buffer[i].right;
-			++visualCursor;
-			visualCursor %= SOUND_SAMPLES_PER_SEC;
+		if (!paused) {
+			for (int i = 0; i < count; ++i) {
+				visualSamples[visualCursor].left = buffer[i].left;
+				visualSamples[visualCursor].right = buffer[i].right;
+				++visualCursor;
+				visualCursor %= SOUND_SAMPLES_PER_SEC;
+			}
 		}
 	}
+	LeaveCriticalSection(&playingSoundsLock);
 
 	paintedEnd = end;
 }
